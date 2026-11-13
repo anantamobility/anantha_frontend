@@ -9,3 +9,4 @@ export { ConfirmDialog } from "./ConfirmDialog";
 export { EntityFormDialog } from "./EntityFormDialog";
 export { FormActions } from "./FormActions";
 export { DateRangeFilterBar } from "./DateRangeFilterBar";
+export { BrandLogo } from "./BrandLogo";

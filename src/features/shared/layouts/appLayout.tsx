@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/features/shared/context/authContext";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import { APP_NAV } from "@/features/shared/config/routeConfig";
+import { BrandLogo } from "@/features/shared/components/common";
 import { logoutRequest } from "@/features/auth/api/auth.api";
 import { notifyError, notifySuccess } from "@/features/shared/utils/notify";
 import { getErrorMessage } from "@/features/shared/api/client";
@@ -24,9 +25,9 @@ export default function AppLayout() {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="border-b border-white/10 px-5 py-6">
-          <p className="text-lg font-semibold tracking-tight">Anantha</p>
-          <p className="text-xs text-white/60">Ops Desk</p>
+        <div className="border-b border-white/10 px-5 py-5">
+          <BrandLogo variant="full" className="w-40" />
+          <p className="mt-2 text-xs text-white/60">Ops Desk</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {APP_NAV.filter((item) => canAccessModule(item.resource)).map((item) => (
