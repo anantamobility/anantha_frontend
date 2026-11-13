@@ -11,6 +11,4 @@ export const APP_NAV: NavItem[] = [
   { label: "Riders", path: "/riders", resource: "rider" },
   { label: "Clients", path: "/clients", resource: "client" },
   { label: "Rate Cards", path: "/ratecards", resource: "ratecard" },
-  { label: "Rentals", path: "/rentals", resource: "rental" },
-  { label: "Collections", path: "/collections", resource: "collection" },
 ];
