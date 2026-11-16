@@ -8,8 +8,8 @@ import { notifyError, notifySuccess } from "@/features/shared/utils/notify";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setSession } = useAuth();
-  const [phone, setPhone] = useState("9000000000");
-  const [password, setPassword] = useState("DemoPassword123");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (event: React.FormEvent) => {
@@ -57,9 +57,6 @@ export default function LoginPage() {
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>
-      <p className="text-center text-xs text-muted-foreground">
-        Demo admin: 9000000000 / DemoPassword123
-      </p>
     </form>
   );
 }
