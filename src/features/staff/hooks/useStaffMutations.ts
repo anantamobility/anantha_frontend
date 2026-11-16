@@ -26,8 +26,13 @@ export function useStaffMutations() {
       onError: (e) => notifyError(getErrorMessage(e, "Failed to create staff")),
     }),
     updateMutation: useMutation({
-      mutationFn: ({ id, payload }: { id: string; payload: StaffUpdatePayload }) =>
-        updateStaff(id, payload),
+      mutationFn: ({
+        id,
+        payload,
+      }: {
+        id: string;
+        payload: Partial<StaffUpdatePayload>;
+      }) => updateStaff(id, payload),
       onSuccess: async () => {
         await invalidate();
         notifySuccess("Staff updated");
