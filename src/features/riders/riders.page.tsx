@@ -5,17 +5,29 @@ import {
   ConfirmDialog,
   DataTable,
   EntityFormDialog,
+  Field,
   FormActions,
+  FormSection,
   LoadingSkeleton,
   PageHeader,
   PaginationBar,
   SearchBar,
   StatusBadge,
+  inputClass,
   type DataTableColumn,
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import { getErrorMessage } from "@/features/shared/api/client";
 import { notifyError } from "@/features/shared/utils/notify";
+import {
+  EMPTY_ADDRESS,
+  addressFromUnknown,
+  addressPayload,
+  emptyToDate,
+  emptyToNull,
+  toDateInput,
+  type AddressForm,
+} from "@/features/shared/utils/formValues";
 import {
   downloadRiderDocument,
   getRider,
@@ -49,22 +61,31 @@ const DOCUMENT_TYPES = [
 
 const EMPTY = {
   fullName: "",
+  riderCode: "",
   phoneNumber: "",
   email: "",
   password: "",
+  dateOfBirth: "",
+  gender: "" as "" | "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY",
+  emergencyContactName: "",
+  emergencyContactPhone: "",
+  aadharNumber: "",
+  panNumber: "",
+  licenseNumber: "",
+  medicalReportExpiryDate: "",
+  agreementDate: "",
+  policeVerificationValidUpto: "",
+  backgroundVerificationExpiryDate: "",
+  dateOfLastWorkingDay: "",
+  bankName: "",
+  branch: "",
   rentalType: "B2C" as "B2C" | "B2B",
   b2cMode: "AML_RIDER" as "AML_RIDER" | "INDIVIDUAL_RIDER",
   b2bRiderMgmt: "CLIENT_MANAGED" as "CLIENT_MANAGED" | "AML_MANAGED",
   clientId: "",
   hubId: "",
-  dateOfBirth: "",
-  policeVerificationValidUpto: "",
-  backgroundVerificationExpiryDate: "",
+  address: { ...EMPTY_ADDRESS },
 };
-
-function toDateInput(value?: string | null) {
-  return value ? value.slice(0, 10) : "";
-}
 
 export default function RidersPage() {
   const { canManageMasterData } = useRbac();
@@ -103,6 +124,9 @@ export default function RidersPage() {
   } = useRiderMutations();
   const riders = listQuery.data?.riders ?? [];
   const pagination = listQuery.data?.pagination;
+
+  const setAddress = (patch: Partial<AddressForm>) =>
+    setForm((prev) => ({ ...prev, address: { ...prev.address, ...patch } }));
 
   useEffect(() => {
     if (!docsTarget) {
@@ -149,9 +173,33 @@ export default function RidersPage() {
                     setEditing(detail);
                     setForm({
                       fullName: detail.fullName,
+                      riderCode: detail.riderCode ?? "",
                       phoneNumber: detail.user?.phoneNumber ?? "",
                       email: detail.user?.email ?? "",
                       password: "",
+                      dateOfBirth: toDateInput(detail.dateOfBirth),
+                      gender:
+                        (detail.gender as typeof EMPTY.gender) || "",
+                      emergencyContactName: detail.emergencyContactName ?? "",
+                      emergencyContactPhone: detail.emergencyContactPhone ?? "",
+                      aadharNumber: detail.aadharNumber ?? "",
+                      panNumber: detail.panNumber ?? "",
+                      licenseNumber: detail.licenseNumber ?? "",
+                      medicalReportExpiryDate: toDateInput(
+                        detail.medicalReportExpiryDate,
+                      ),
+                      agreementDate: toDateInput(detail.agreementDate),
+                      policeVerificationValidUpto: toDateInput(
+                        detail.policeVerificationValidUpto,
+                      ),
+                      backgroundVerificationExpiryDate: toDateInput(
+                        detail.backgroundVerificationExpiryDate,
+                      ),
+                      dateOfLastWorkingDay: toDateInput(
+                        detail.dateOfLastWorkingDay,
+                      ),
+                      bankName: detail.bankName ?? "",
+                      branch: detail.branch ?? "",
                       rentalType: (detail.rentalType as "B2C" | "B2B") || "B2C",
                       b2cMode:
                         (detail.b2cMode as typeof EMPTY.b2cMode) || "AML_RIDER",
@@ -160,13 +208,7 @@ export default function RidersPage() {
                         "CLIENT_MANAGED",
                       clientId: detail.clientId ?? "",
                       hubId: detail.hubId ?? "",
-                      dateOfBirth: toDateInput(detail.dateOfBirth),
-                      policeVerificationValidUpto: toDateInput(
-                        detail.policeVerificationValidUpto,
-                      ),
-                      backgroundVerificationExpiryDate: toDateInput(
-                        detail.backgroundVerificationExpiryDate,
-                      ),
+                      address: addressFromUnknown(detail.address),
                     });
                     setFormOpen(true);
                   } catch (error) {
@@ -220,39 +262,46 @@ export default function RidersPage() {
     [canManageMasterData],
   );
 
+  const profilePayload = () => ({
+    fullName: form.fullName.trim(),
+    riderCode: form.riderCode.trim() || undefined,
+    dateOfBirth: emptyToDate(form.dateOfBirth),
+    gender: form.gender || null,
+    address: addressPayload(form.address),
+    emergencyContactName: emptyToNull(form.emergencyContactName),
+    emergencyContactPhone: emptyToNull(form.emergencyContactPhone),
+    aadharNumber: emptyToNull(form.aadharNumber),
+    panNumber: emptyToNull(form.panNumber),
+    licenseNumber: emptyToNull(form.licenseNumber),
+    medicalReportExpiryDate: emptyToDate(form.medicalReportExpiryDate),
+    agreementDate: emptyToDate(form.agreementDate),
+    policeVerificationValidUpto: emptyToDate(form.policeVerificationValidUpto),
+    backgroundVerificationExpiryDate: emptyToDate(
+      form.backgroundVerificationExpiryDate,
+    ),
+    dateOfLastWorkingDay: emptyToDate(form.dateOfLastWorkingDay),
+    bankName: emptyToNull(form.bankName),
+    branch: emptyToNull(form.branch),
+    rentalType: form.rentalType,
+    b2cMode: form.rentalType === "B2C" ? form.b2cMode : null,
+    b2bRiderMgmt: form.rentalType === "B2B" ? form.b2bRiderMgmt : null,
+    clientId: form.rentalType === "B2B" ? form.clientId || null : null,
+    hubId: form.hubId || null,
+  });
+
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (editing) {
       await updateMutation.mutateAsync({
         id: editing.id,
-        payload: {
-          fullName: form.fullName.trim(),
-          rentalType: form.rentalType,
-          b2cMode: form.rentalType === "B2C" ? form.b2cMode : null,
-          b2bRiderMgmt: form.rentalType === "B2B" ? form.b2bRiderMgmt : null,
-          clientId: form.rentalType === "B2B" ? form.clientId || null : null,
-          hubId: form.hubId || null,
-          dateOfBirth: form.dateOfBirth || null,
-          policeVerificationValidUpto: form.policeVerificationValidUpto || null,
-          backgroundVerificationExpiryDate:
-            form.backgroundVerificationExpiryDate || null,
-        },
+        payload: profilePayload(),
       });
     } else {
       await createMutation.mutateAsync({
-        fullName: form.fullName.trim(),
+        ...profilePayload(),
         phoneNumber: form.phoneNumber.trim(),
-        email: form.email.trim() || null,
+        email: emptyToNull(form.email),
         password: form.password,
-        rentalType: form.rentalType,
-        b2cMode: form.rentalType === "B2C" ? form.b2cMode : null,
-        b2bRiderMgmt: form.rentalType === "B2B" ? form.b2bRiderMgmt : null,
-        clientId: form.rentalType === "B2B" ? form.clientId || null : null,
-        hubId: form.hubId || null,
-        dateOfBirth: form.dateOfBirth || null,
-        policeVerificationValidUpto: form.policeVerificationValidUpto || null,
-        backgroundVerificationExpiryDate:
-          form.backgroundVerificationExpiryDate || null,
       });
     }
     setFormOpen(false);
@@ -264,7 +313,7 @@ export default function RidersPage() {
     <div>
       <PageHeader
         title="Riders"
-        description="Driver / rider master data."
+        description="Driver / rider master data — full profile."
         actions={
           canManageMasterData ? (
             <button
@@ -312,172 +361,358 @@ export default function RidersPage() {
         title={editing ? "Edit rider" : "Create rider"}
         onClose={() => setFormOpen(false)}
       >
-        <form className="space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm">
-            Full name
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.fullName}
-              onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
-              required
-            />
-          </label>
-          {!editing ? (
-            <>
-              <label className="block text-sm">
-                Phone
-                <input
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                  value={form.phoneNumber}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, phoneNumber: e.target.value }))
-                  }
-                  required
-                />
-              </label>
-              <label className="block text-sm">
-                Email
-                <input
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                  value={form.email}
-                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                />
-              </label>
-              <label className="block text-sm">
-                Password
-                <input
-                  type="password"
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                  value={form.password}
-                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                  required
-                  minLength={8}
-                />
-              </label>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <FormSection title="Identity">
+            <Field label="Full name *">
+              <input
+                className={inputClass}
+                value={form.fullName}
+                onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+                required
+              />
+            </Field>
+            <Field label="Rider code (optional)">
+              <input
+                className={inputClass}
+                value={form.riderCode}
+                onChange={(e) => setForm((p) => ({ ...p, riderCode: e.target.value }))}
+              />
+            </Field>
+            {!editing ? (
+              <>
+                <Field label="Phone *">
+                  <input
+                    className={inputClass}
+                    value={form.phoneNumber}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, phoneNumber: e.target.value }))
+                    }
+                    required
+                  />
+                </Field>
+                <Field label="Email">
+                  <input
+                    className={inputClass}
+                    value={form.email}
+                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Password *">
+                  <input
+                    type="password"
+                    className={inputClass}
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, password: e.target.value }))
+                    }
+                    required
+                    minLength={8}
+                  />
+                </Field>
+              </>
+            ) : (
               <p className="text-xs text-muted-foreground">
-                Password needs 8+ characters with a letter and a digit. Phone/email
-                changes later go through Users.
+                Phone/email are managed on the linked user account.
               </p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Phone/email are managed on the linked user account.
-            </p>
-          )}
-          <label className="block text-sm">
-            Date of birth
-            <input
-              type="date"
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.dateOfBirth}
-              onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
-            />
-          </label>
-          <label className="block text-sm">
-            Rental type
-            <select
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.rentalType}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, rentalType: e.target.value as "B2C" | "B2B" }))
-              }
-            >
-              <option value="B2C">B2C</option>
-              <option value="B2B">B2B</option>
-            </select>
-          </label>
-          {form.rentalType === "B2C" ? (
-            <label className="block text-sm">
-              B2C mode
-              <select
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.b2cMode}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    b2cMode: e.target.value as typeof EMPTY.b2cMode,
-                  }))
-                }
-              >
-                <option value="AML_RIDER">AML rider</option>
-                <option value="INDIVIDUAL_RIDER">Individual rider</option>
-              </select>
-            </label>
-          ) : (
-            <>
-              <label className="block text-sm">
-                B2B rider management
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Date of birth">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.dateOfBirth}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, dateOfBirth: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="Gender">
                 <select
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                  value={form.b2bRiderMgmt}
+                  className={inputClass}
+                  value={form.gender}
                   onChange={(e) =>
                     setForm((p) => ({
                       ...p,
-                      b2bRiderMgmt: e.target.value as typeof EMPTY.b2bRiderMgmt,
+                      gender: e.target.value as typeof EMPTY.gender,
                     }))
                   }
                 >
-                  <option value="CLIENT_MANAGED">Client managed</option>
-                  <option value="AML_MANAGED">AML managed</option>
+                  <option value="">Unset</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                  <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                 </select>
-              </label>
-              <label className="block text-sm">
-                Client ID
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Address">
+            <Field label="Line 1">
+              <input
+                className={inputClass}
+                value={form.address.line1}
+                onChange={(e) => setAddress({ line1: e.target.value })}
+              />
+            </Field>
+            <Field label="Line 2">
+              <input
+                className={inputClass}
+                value={form.address.line2}
+                onChange={(e) => setAddress({ line2: e.target.value })}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="City">
                 <input
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                  value={form.clientId}
-                  onChange={(e) => setForm((p) => ({ ...p, clientId: e.target.value }))}
-                  placeholder="UUID (clients API not live)"
-                  required
+                  className={inputClass}
+                  value={form.address.city}
+                  onChange={(e) => setAddress({ city: e.target.value })}
                 />
-              </label>
-            </>
-          )}
-          <label className="block text-sm">
-            Hub
-            <select
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.hubId}
-              onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
-            >
-              <option value="">Unassigned</option>
-              {(hubsQuery.data?.hubs ?? []).map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              PVC valid upto
-              <input
-                type="date"
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.policeVerificationValidUpto}
+              </Field>
+              <Field label="State">
+                <input
+                  className={inputClass}
+                  value={form.address.state}
+                  onChange={(e) => setAddress({ state: e.target.value })}
+                />
+              </Field>
+              <Field label="Postal code">
+                <input
+                  className={inputClass}
+                  value={form.address.postalCode}
+                  onChange={(e) => setAddress({ postalCode: e.target.value })}
+                />
+              </Field>
+              <Field label="Country">
+                <input
+                  className={inputClass}
+                  value={form.address.country}
+                  onChange={(e) => setAddress({ country: e.target.value })}
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Classification">
+            <Field label="Rental type">
+              <select
+                className={inputClass}
+                value={form.rentalType}
                 onChange={(e) =>
                   setForm((p) => ({
                     ...p,
-                    policeVerificationValidUpto: e.target.value,
+                    rentalType: e.target.value as "B2C" | "B2B",
                   }))
                 }
-              />
-            </label>
-            <label className="block text-sm">
-              BGV expiry
-              <input
-                type="date"
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.backgroundVerificationExpiryDate}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    backgroundVerificationExpiryDate: e.target.value,
-                  }))
-                }
-              />
-            </label>
-          </div>
+              >
+                <option value="B2C">B2C</option>
+                <option value="B2B">B2B</option>
+              </select>
+            </Field>
+            {form.rentalType === "B2C" ? (
+              <Field label="B2C mode">
+                <select
+                  className={inputClass}
+                  value={form.b2cMode}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      b2cMode: e.target.value as typeof EMPTY.b2cMode,
+                    }))
+                  }
+                >
+                  <option value="AML_RIDER">AML rider</option>
+                  <option value="INDIVIDUAL_RIDER">Individual rider</option>
+                </select>
+              </Field>
+            ) : (
+              <>
+                <Field label="B2B rider management">
+                  <select
+                    className={inputClass}
+                    value={form.b2bRiderMgmt}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        b2bRiderMgmt: e.target.value as typeof EMPTY.b2bRiderMgmt,
+                      }))
+                    }
+                  >
+                    <option value="CLIENT_MANAGED">Client managed</option>
+                    <option value="AML_MANAGED">AML managed</option>
+                  </select>
+                </Field>
+                <Field label="Client ID *">
+                  <input
+                    className={inputClass}
+                    value={form.clientId}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, clientId: e.target.value }))
+                    }
+                    placeholder="UUID (clients API not live)"
+                    required
+                  />
+                </Field>
+              </>
+            )}
+            <Field label="Hub">
+              <select
+                className={inputClass}
+                value={form.hubId}
+                onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
+              >
+                <option value="">Unassigned</option>
+                {(hubsQuery.data?.hubs ?? []).map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </FormSection>
+
+          <FormSection title="Emergency & IDs">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Emergency contact name">
+                <input
+                  className={inputClass}
+                  value={form.emergencyContactName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, emergencyContactName: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="Emergency contact phone">
+                <input
+                  className={inputClass}
+                  value={form.emergencyContactPhone}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      emergencyContactPhone: e.target.value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Aadhar">
+                <input
+                  className={inputClass}
+                  value={form.aadharNumber}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, aadharNumber: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="PAN">
+                <input
+                  className={inputClass}
+                  value={form.panNumber}
+                  onChange={(e) => setForm((p) => ({ ...p, panNumber: e.target.value }))}
+                />
+              </Field>
+              <Field label="License number">
+                <input
+                  className={inputClass}
+                  value={form.licenseNumber}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, licenseNumber: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Compliance dates">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Medical report expiry">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.medicalReportExpiryDate}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      medicalReportExpiryDate: e.target.value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Agreement date">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.agreementDate}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, agreementDate: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="PVC valid upto">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.policeVerificationValidUpto}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      policeVerificationValidUpto: e.target.value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="BGV expiry">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.backgroundVerificationExpiryDate}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      backgroundVerificationExpiryDate: e.target.value,
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Last working day">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.dateOfLastWorkingDay}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      dateOfLastWorkingDay: e.target.value,
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Bank">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Bank name">
+                <input
+                  className={inputClass}
+                  value={form.bankName}
+                  onChange={(e) => setForm((p) => ({ ...p, bankName: e.target.value }))}
+                />
+              </Field>
+              <Field label="Branch">
+                <input
+                  className={inputClass}
+                  value={form.branch}
+                  onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))}
+                />
+              </Field>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Account number / IFSC are on the schema but not in the live rider API
+              validation yet.
+            </p>
+          </FormSection>
+
           <div className="flex justify-end gap-2 pt-2">
             <FormActions
               onCancel={() => setFormOpen(false)}
@@ -507,10 +742,9 @@ export default function RidersPage() {
             setStatusTarget(null);
           }}
         >
-          <label className="block text-sm">
-            Status
+          <Field label="Status">
             <select
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              className={inputClass}
               value={statusForm.status}
               onChange={(e) =>
                 setStatusForm((p) => ({
@@ -525,20 +759,14 @@ export default function RidersPage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="block text-sm">
-            Reason
+          </Field>
+          <Field label="Reason">
             <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              className={inputClass}
               value={statusForm.reason}
               onChange={(e) => setStatusForm((p) => ({ ...p, reason: e.target.value }))}
             />
-          </label>
-          {statusTarget?.statusChangedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Last changed: {new Date(statusTarget.statusChangedAt).toLocaleString()}
-            </p>
-          ) : null}
+          </Field>
           <div className="flex justify-end gap-2 pt-2">
             <FormActions
               onCancel={() => setStatusTarget(null)}
@@ -641,10 +869,9 @@ export default function RidersPage() {
             }}
           >
             <p className="text-sm font-medium">Upload document</p>
-            <label className="block text-sm">
-              Type
+            <Field label="Type">
               <select
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                className={inputClass}
                 value={docForm.documentType}
                 onChange={(e) =>
                   setDocForm((p) => ({ ...p, documentType: e.target.value }))
@@ -656,50 +883,46 @@ export default function RidersPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="block text-sm">
-              Title
+            </Field>
+            <Field label="Title">
               <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                className={inputClass}
                 value={docForm.title}
                 onChange={(e) => setDocForm((p) => ({ ...p, title: e.target.value }))}
                 required
               />
-            </label>
-            <label className="block text-sm">
-              File
+            </Field>
+            <Field label="File">
               <input
                 type="file"
-                className="mt-1 w-full text-sm"
+                className="w-full text-sm"
                 onChange={(e) =>
                   setDocForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))
                 }
                 required
               />
-            </label>
+            </Field>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm">
-                Issue date
+              <Field label="Issue date">
                 <input
                   type="date"
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                  className={inputClass}
                   value={docForm.issueDate}
                   onChange={(e) =>
                     setDocForm((p) => ({ ...p, issueDate: e.target.value }))
                   }
                 />
-              </label>
-              <label className="block text-sm">
-                Expiry date
+              </Field>
+              <Field label="Expiry date">
                 <input
                   type="date"
-                  className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                  className={inputClass}
                   value={docForm.expiryDate}
                   onChange={(e) =>
                     setDocForm((p) => ({ ...p, expiryDate: e.target.value }))
                   }
                 />
-              </label>
+              </Field>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <FormActions

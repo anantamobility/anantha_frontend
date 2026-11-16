@@ -4,22 +4,36 @@ import {
   ConfirmDialog,
   DataTable,
   EntityFormDialog,
+  Field,
   FormActions,
+  FormSection,
   LoadingSkeleton,
   PageHeader,
   PaginationBar,
   SearchBar,
   StatusBadge,
+  inputClass,
+  textareaClass,
   type DataTableColumn,
 } from "@/features/shared/components/common";
 import { formatMoney } from "@/features/shared/utils/money";
 import { useRbac } from "@/features/shared/hooks/useRbac";
+import {
+  emptyToDate,
+  emptyToNull,
+  parseOptionalJson,
+  toDateInput,
+} from "@/features/shared/utils/formValues";
+import { getErrorMessage } from "@/features/shared/api/client";
+import { notifyError } from "@/features/shared/utils/notify";
+import { getRateCard } from "./api/ratecards.api";
 import { useRateCardsListQuery } from "./hooks/useRateCardsQuery";
 import { useRateCardMutations } from "./hooks/useRateCardMutations";
 
 const EMPTY = {
   name: "",
   code: "",
+  description: "",
   rentalType: "" as "" | "B2C" | "B2B",
   dailyRate: "250",
   weeklyRate: "1500",
@@ -28,6 +42,8 @@ const EMPTY = {
   securityDeposit: "3000",
   vehicleCategory: "",
   effectiveFrom: new Date().toISOString().slice(0, 10),
+  effectiveTo: "",
+  termsJson: "",
   isActive: true,
 };
 
@@ -70,24 +86,32 @@ export default function RateCardsPage() {
               <button
                 type="button"
                 className="text-xs text-primary"
-                onClick={() => {
-                  setEditing(row);
-                  setForm({
-                    name: row.name,
-                    code: row.code,
-                    rentalType: (row.rentalType as "B2C" | "B2B") || "",
-                    dailyRate: String(row.dailyRate),
-                    weeklyRate: String(row.weeklyRate ?? ""),
-                    fortnightlyRate: String(row.fortnightlyRate ?? ""),
-                    monthlyRate: String(row.monthlyRate ?? ""),
-                    securityDeposit: String(row.securityDeposit ?? ""),
-                    vehicleCategory: row.vehicleCategory ?? "",
-                    effectiveFrom: row.effectiveFrom
-                      ? row.effectiveFrom.slice(0, 10)
-                      : new Date().toISOString().slice(0, 10),
-                    isActive: row.isActive,
-                  });
-                  setFormOpen(true);
+                onClick={async () => {
+                  try {
+                    const detail = await getRateCard(row.id);
+                    setEditing(detail);
+                    setForm({
+                      name: detail.name,
+                      code: detail.code,
+                      description: detail.description ?? "",
+                      rentalType: (detail.rentalType as "B2C" | "B2B") || "",
+                      dailyRate: String(detail.dailyRate),
+                      weeklyRate: String(detail.weeklyRate ?? ""),
+                      fortnightlyRate: String(detail.fortnightlyRate ?? ""),
+                      monthlyRate: String(detail.monthlyRate ?? ""),
+                      securityDeposit: String(detail.securityDeposit ?? ""),
+                      vehicleCategory: detail.vehicleCategory ?? "",
+                      effectiveFrom: toDateInput(detail.effectiveFrom),
+                      effectiveTo: toDateInput(detail.effectiveTo),
+                      termsJson: detail.terms
+                        ? JSON.stringify(detail.terms, null, 2)
+                        : "",
+                      isActive: detail.isActive,
+                    });
+                    setFormOpen(true);
+                  } catch (error) {
+                    notifyError(getErrorMessage(error, "Failed to load rate card"));
+                  }
                 }}
               >
                 Edit
@@ -120,16 +144,27 @@ export default function RateCardsPage() {
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    let terms: unknown = null;
+    try {
+      terms = parseOptionalJson(form.termsJson);
+    } catch {
+      notifyError("Terms must be valid JSON");
+      return;
+    }
+
     const payload = {
       name: form.name.trim(),
+      description: emptyToNull(form.description),
       rentalType: form.rentalType || null,
       dailyRate: form.dailyRate,
-      weeklyRate: form.weeklyRate || null,
-      fortnightlyRate: form.fortnightlyRate || null,
-      monthlyRate: form.monthlyRate || null,
-      securityDeposit: form.securityDeposit || null,
-      vehicleCategory: form.vehicleCategory.trim() || null,
+      weeklyRate: emptyToNull(form.weeklyRate),
+      fortnightlyRate: emptyToNull(form.fortnightlyRate),
+      monthlyRate: emptyToNull(form.monthlyRate),
+      securityDeposit: emptyToNull(form.securityDeposit),
+      vehicleCategory: emptyToNull(form.vehicleCategory),
       effectiveFrom: form.effectiveFrom,
+      effectiveTo: emptyToDate(form.effectiveTo),
+      terms,
       ...(editing
         ? {}
         : {
@@ -196,120 +231,150 @@ export default function RateCardsPage() {
         title={editing ? "Edit rate card" : "Create rate card"}
         onClose={() => setFormOpen(false)}
       >
-        <form className="space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm">
-            Name
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              required
-            />
-          </label>
-          {!editing ? (
-            <label className="block text-sm">
-              Code (optional)
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <FormSection title="Basics">
+            <Field label="Name">
               <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.code}
-                onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
-              />
-            </label>
-          ) : null}
-          <label className="block text-sm">
-            Type
-            <select
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.rentalType}
-              onChange={(e) =>
-                setForm((p) => ({
-                  ...p,
-                  rentalType: e.target.value as "" | "B2C" | "B2B",
-                }))
-              }
-            >
-              <option value="">Any</option>
-              <option value="B2C">B2C</option>
-              <option value="B2B">B2B</option>
-            </select>
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              Daily
-              <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.dailyRate}
-                onChange={(e) => setForm((p) => ({ ...p, dailyRate: e.target.value }))}
+                className={inputClass}
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 required
               />
-            </label>
-            <label className="block text-sm">
-              Weekly
-              <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.weeklyRate}
-                onChange={(e) => setForm((p) => ({ ...p, weeklyRate: e.target.value }))}
+            </Field>
+            {!editing ? (
+              <Field label="Code (optional)">
+                <input
+                  className={inputClass}
+                  value={form.code}
+                  onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
+                />
+              </Field>
+            ) : null}
+            <Field label="Description">
+              <textarea
+                className={textareaClass}
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               />
-            </label>
-            <label className="block text-sm">
-              Fortnightly
-              <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.fortnightlyRate}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, fortnightlyRate: e.target.value }))
-                }
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Rental type">
+                <select
+                  className={inputClass}
+                  value={form.rentalType}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      rentalType: e.target.value as "" | "B2C" | "B2B",
+                    }))
+                  }
+                >
+                  <option value="">Any</option>
+                  <option value="B2C">B2C</option>
+                  <option value="B2B">B2B</option>
+                </select>
+              </Field>
+              <Field label="Vehicle category">
+                <input
+                  className={inputClass}
+                  value={form.vehicleCategory}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, vehicleCategory: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Rates">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Daily *">
+                <input
+                  className={inputClass}
+                  value={form.dailyRate}
+                  onChange={(e) => setForm((p) => ({ ...p, dailyRate: e.target.value }))}
+                  required
+                />
+              </Field>
+              <Field label="Weekly">
+                <input
+                  className={inputClass}
+                  value={form.weeklyRate}
+                  onChange={(e) => setForm((p) => ({ ...p, weeklyRate: e.target.value }))}
+                />
+              </Field>
+              <Field label="Fortnightly">
+                <input
+                  className={inputClass}
+                  value={form.fortnightlyRate}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, fortnightlyRate: e.target.value }))
+                  }
+                />
+              </Field>
+              <Field label="Monthly">
+                <input
+                  className={inputClass}
+                  value={form.monthlyRate}
+                  onChange={(e) => setForm((p) => ({ ...p, monthlyRate: e.target.value }))}
+                />
+              </Field>
+              <Field label="Security deposit">
+                <input
+                  className={inputClass}
+                  value={form.securityDeposit}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, securityDeposit: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Validity & terms">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Effective from *">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.effectiveFrom}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, effectiveFrom: e.target.value }))
+                  }
+                  required
+                />
+              </Field>
+              <Field label="Effective to">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.effectiveTo}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, effectiveTo: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
+            <Field label="Terms (JSON)">
+              <textarea
+                className={textareaClass}
+                value={form.termsJson}
+                onChange={(e) => setForm((p) => ({ ...p, termsJson: e.target.value }))}
+                placeholder='{"graceDays": 2}'
               />
-            </label>
-            <label className="block text-sm">
-              Monthly
-              <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.monthlyRate}
-                onChange={(e) => setForm((p) => ({ ...p, monthlyRate: e.target.value }))}
-              />
-            </label>
-          </div>
-          <label className="block text-sm">
-            Security deposit
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.securityDeposit}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, securityDeposit: e.target.value }))
-              }
-            />
-          </label>
-          <label className="block text-sm">
-            Vehicle category
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.vehicleCategory}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, vehicleCategory: e.target.value }))
-              }
-            />
-          </label>
-          <label className="block text-sm">
-            Effective from
-            <input
-              type="date"
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.effectiveFrom}
-              onChange={(e) => setForm((p) => ({ ...p, effectiveFrom: e.target.value }))}
-              required
-            />
-          </label>
-          {!editing ? (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
-              />
-              Active
-            </label>
-          ) : null}
+            </Field>
+            {!editing ? (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                />
+                Active
+              </label>
+            ) : null}
+          </FormSection>
+
           <div className="flex justify-end gap-2 pt-2">
             <FormActions
               onCancel={() => setFormOpen(false)}

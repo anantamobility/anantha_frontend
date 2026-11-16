@@ -32,8 +32,9 @@ export default function RolesPage() {
   return (
     <div>
       <PageHeader
-        title="Roles & permissions"
-        description="PBAC role definitions for the live API surface."
+        title="Roles and permissions"
+        description="Role definitions and permission assignments."
+
         actions={
           isAdmin ? (
             <button

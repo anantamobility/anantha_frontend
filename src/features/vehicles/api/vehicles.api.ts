@@ -1,6 +1,6 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
-import type { Vehicle } from "@/features/shared/entities";
+import type { Vehicle, VehicleTyre } from "@/features/shared/entities";
 
 export type VehiclePayload = {
   registrationNumber: string;
@@ -8,7 +8,46 @@ export type VehiclePayload = {
   make?: string | null;
   model?: string | null;
   year?: number | null;
+  color?: string | null;
+  vin?: string | null;
+  acquiredAt?: string | null;
   isActive?: boolean;
+  vehicleCategory?: string | null;
+  vehicleType?: string | null;
+  seats?: number | null;
+  batteryType?: string | null;
+  batteryCapacity?: number | null;
+  nominalRange?: number | null;
+  bootSpace?: number | null;
+  chargingOptions?: string | null;
+  chargerProvided?: boolean | null;
+  noOfTyres?: number | null;
+  tyres?: VehicleTyre[] | null;
+  batteryNumber?: string | null;
+  batteryModelNumber?: string | null;
+  batteryBrand?: string | null;
+  registrationType?: string | null;
+  ownershipType?: string | null;
+  dateOfPurchase?: string | null;
+  dateOfDelivery?: string | null;
+  dateOfRegistration?: string | null;
+  dateOfOperation?: string | null;
+  warrantyStartDate?: string | null;
+  warrantyEndDate?: string | null;
+  safeCabCertificateExpiryDate?: string | null;
+  telematicsExpiryDate?: string | null;
+  loanProvider?: string | null;
+  emiAmount?: number | null;
+  tenurePeriod?: number | null;
+  emiDueDate?: string | null;
+  insurancePolicyNumber?: string | null;
+  insuranceProvider?: string | null;
+  insurancePolicyType?: string | null;
+  insuranceValidFrom?: string | null;
+  insuranceValidTo?: string | null;
+  insurancePremiumAmount?: number | null;
+  insuranceStatus?: string | null;
+  insuranceThirdParty?: string | null;
 };
 
 export type VehicleStatusPayload = {
@@ -26,6 +65,11 @@ export type VehicleStatusPayload = {
 export async function listVehicles(params: PaginatedListParams) {
   const response = await apiClient.get("/vehicles", { params });
   return unwrapData<{ vehicles: Vehicle[]; pagination: PaginationMeta }>(response.data);
+}
+
+export async function getVehicle(id: string) {
+  const response = await apiClient.get(`/vehicles/${id}`);
+  return unwrapData<{ vehicle: Vehicle }>(response.data).vehicle;
 }
 
 export async function createVehicle(payload: VehiclePayload) {

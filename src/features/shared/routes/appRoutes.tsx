@@ -4,7 +4,6 @@ import { HubsPage } from "@/features/hubs";
 import { VehiclesPage } from "@/features/vehicles";
 import { RidersPage } from "@/features/riders";
 import { RateCardsPage } from "@/features/ratecards";
-import { UsersPage } from "@/features/users";
 import { StaffPage } from "@/features/staff";
 import { RolesPage } from "@/features/pbac";
 import { AuditLogsPage } from "@/features/audit-logs";
@@ -29,7 +28,6 @@ export default function AppRoutes() {
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/riders" element={<RidersPage />} />
           <Route path="/ratecards" element={<RateCardsPage />} />
-          <Route path="/users" element={<UsersPage />} />
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />

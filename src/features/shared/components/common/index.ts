@@ -8,5 +8,7 @@ export { DataTable, type DataTableColumn } from "./DataTable";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { EntityFormDialog } from "./EntityFormDialog";
 export { FormActions } from "./FormActions";
+export { FormSection, Field, inputClass, textareaClass } from "./FormSection";
 export { DateRangeFilterBar } from "./DateRangeFilterBar";
 export { BrandLogo } from "./BrandLogo";
+

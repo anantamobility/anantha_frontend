@@ -4,25 +4,40 @@ import {
   ConfirmDialog,
   DataTable,
   EntityFormDialog,
+  Field,
   FormActions,
+  FormSection,
   LoadingSkeleton,
   PageHeader,
   PaginationBar,
   SearchBar,
   StatusBadge,
+  inputClass,
   type DataTableColumn,
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
+import {
+  EMPTY_ADDRESS,
+  INDIAN_STATES,
+  addressFromUnknown,
+  addressPayload,
+  emptyToNull,
+  type AddressForm,
+} from "@/features/shared/utils/formValues";
+import { getErrorMessage } from "@/features/shared/api/client";
+import { notifyError } from "@/features/shared/utils/notify";
+import { getHub } from "./api/hubs.api";
 import { useHubsListQuery } from "./hooks/useHubsQuery";
 import { useHubMutations } from "./hooks/useHubMutations";
 
 const EMPTY_FORM = {
   name: "",
   city: "",
-  state: "",
+  state: "Karnataka",
   contactPhone: "",
   contactEmail: "",
   isActive: true,
+  address: { ...EMPTY_ADDRESS },
 };
 
 export default function HubsPage() {
@@ -39,6 +54,9 @@ export default function HubsPage() {
 
   const hubs = listQuery.data?.hubs ?? [];
   const pagination = listQuery.data?.pagination;
+
+  const setAddress = (patch: Partial<AddressForm>) =>
+    setForm((prev) => ({ ...prev, address: { ...prev.address, ...patch } }));
 
   const columns = useMemo<DataTableColumn<Hub>[]>(
     () => [
@@ -68,17 +86,23 @@ export default function HubsPage() {
               <button
                 type="button"
                 className="text-xs text-primary"
-                onClick={() => {
-                  setEditing(row);
-                  setForm({
-                    name: row.name,
-                    city: row.city,
-                    state: row.state,
-                    contactPhone: row.contactPhone ?? "",
-                    contactEmail: row.contactEmail ?? "",
-                    isActive: row.isActive,
-                  });
-                  setFormOpen(true);
+                onClick={async () => {
+                  try {
+                    const detail = await getHub(row.id);
+                    setEditing(detail);
+                    setForm({
+                      name: detail.name,
+                      city: detail.city,
+                      state: detail.state,
+                      contactPhone: detail.contactPhone ?? "",
+                      contactEmail: detail.contactEmail ?? "",
+                      isActive: detail.isActive,
+                      address: addressFromUnknown(detail.address),
+                    });
+                    setFormOpen(true);
+                  } catch (error) {
+                    notifyError(getErrorMessage(error, "Failed to load hub"));
+                  }
                 }}
               >
                 Edit
@@ -103,8 +127,9 @@ export default function HubsPage() {
       name: form.name.trim(),
       city: form.city.trim(),
       state: form.state.trim(),
-      contactPhone: form.contactPhone.trim() || null,
-      contactEmail: form.contactEmail.trim() || null,
+      address: addressPayload(form.address),
+      contactPhone: emptyToNull(form.contactPhone),
+      contactEmail: emptyToNull(form.contactEmail),
       isActive: form.isActive,
     };
     if (editing) {
@@ -171,75 +196,129 @@ export default function HubsPage() {
         title={editing ? "Edit hub" : "Create hub"}
         onClose={() => setFormOpen(false)}
       >
-        <form className="space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm">
-            Name
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              required
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              City
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <FormSection title="Identity">
+            <Field label="Name">
               <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.city}
-                onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+                className={inputClass}
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 required
               />
-            </label>
-            <label className="block text-sm">
-              State
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="City">
+                <input
+                  className={inputClass}
+                  value={form.city}
+                  onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+                  required
+                />
+              </Field>
+              <Field label="State">
+                <select
+                  className={inputClass}
+                  value={form.state}
+                  onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
+                  required
+                >
+                  {INDIAN_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            {editing ? (
+              <p className="text-xs text-muted-foreground">
+                Hub code: <span className="font-medium">{editing.hubCode}</span>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Hub code is generated from city and state on create.
+              </p>
+            )}
+          </FormSection>
+
+          <FormSection title="Address">
+            <Field label="Line 1">
               <input
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.state}
-                onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
-                required
+                className={inputClass}
+                value={form.address.line1}
+                onChange={(e) => setAddress({ line1: e.target.value })}
               />
+            </Field>
+            <Field label="Line 2">
+              <input
+                className={inputClass}
+                value={form.address.line2}
+                onChange={(e) => setAddress({ line2: e.target.value })}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="City">
+                <input
+                  className={inputClass}
+                  value={form.address.city}
+                  onChange={(e) => setAddress({ city: e.target.value })}
+                />
+              </Field>
+              <Field label="State">
+                <input
+                  className={inputClass}
+                  value={form.address.state}
+                  onChange={(e) => setAddress({ state: e.target.value })}
+                />
+              </Field>
+              <Field label="Postal code">
+                <input
+                  className={inputClass}
+                  value={form.address.postalCode}
+                  onChange={(e) => setAddress({ postalCode: e.target.value })}
+                />
+              </Field>
+              <Field label="Country">
+                <input
+                  className={inputClass}
+                  value={form.address.country}
+                  onChange={(e) => setAddress({ country: e.target.value })}
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Contact">
+            <Field label="Phone">
+              <input
+                className={inputClass}
+                value={form.contactPhone}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, contactPhone: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label="Email">
+              <input
+                className={inputClass}
+                value={form.contactEmail}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, contactEmail: e.target.value }))
+                }
+              />
+            </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+                }
+              />
+              Active
             </label>
-          </div>
-          {editing ? (
-            <p className="text-xs text-muted-foreground">
-              Hub code: <span className="font-medium">{editing.hubCode}</span> (read-only)
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Hub code is generated from city and state on create.
-            </p>
-          )}
-          <label className="block text-sm">
-            Phone
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.contactPhone}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, contactPhone: e.target.value }))
-              }
-            />
-          </label>
-          <label className="block text-sm">
-            Email
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.contactEmail}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, contactEmail: e.target.value }))
-              }
-            />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, isActive: e.target.checked }))
-              }
-            />
-            Active
-          </label>
+          </FormSection>
+
           <div className="flex justify-end gap-2 pt-2">
             <FormActions
               onCancel={() => setFormOpen(false)}

@@ -2,32 +2,47 @@ import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
 import type { Rider } from "@/features/shared/entities";
 
+export type RiderAddressPayload = {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+};
+
 export type RiderCreatePayload = {
   fullName: string;
   phoneNumber: string;
   email?: string | null;
   password: string;
+  riderCode?: string;
+  dateOfBirth?: string | null;
+  gender?: "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY" | null;
+  address?: RiderAddressPayload | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  aadharNumber?: string | null;
+  panNumber?: string | null;
+  licenseNumber?: string | null;
+  medicalReportExpiryDate?: string | null;
+  agreementDate?: string | null;
+  policeVerificationValidUpto?: string | null;
+  backgroundVerificationExpiryDate?: string | null;
+  dateOfLastWorkingDay?: string | null;
+  bankName?: string | null;
+  branch?: string | null;
   rentalType: "B2C" | "B2B";
   b2cMode?: "AML_RIDER" | "INDIVIDUAL_RIDER" | null;
   b2bRiderMgmt?: "CLIENT_MANAGED" | "AML_MANAGED" | null;
   clientId?: string | null;
   hubId?: string | null;
-  dateOfBirth?: string | null;
-  policeVerificationValidUpto?: string | null;
-  backgroundVerificationExpiryDate?: string | null;
 };
 
-export type RiderUpdatePayload = {
-  fullName?: string;
-  rentalType?: "B2C" | "B2B";
-  b2cMode?: "AML_RIDER" | "INDIVIDUAL_RIDER" | null;
-  b2bRiderMgmt?: "CLIENT_MANAGED" | "AML_MANAGED" | null;
-  clientId?: string | null;
-  hubId?: string | null;
-  dateOfBirth?: string | null;
-  policeVerificationValidUpto?: string | null;
-  backgroundVerificationExpiryDate?: string | null;
-};
+export type RiderUpdatePayload = Omit<
+  RiderCreatePayload,
+  "phoneNumber" | "email" | "password"
+>;
 
 export type RiderStatusPayload = {
   status: "ONBOARDING" | "ACTIVE" | "SUSPENDED" | "INACTIVE" | "TERMINATED";
@@ -60,7 +75,7 @@ export async function createRider(payload: RiderCreatePayload) {
   return unwrapData<{ rider: Rider }>(response.data).rider;
 }
 
-export async function updateRider(id: string, payload: RiderUpdatePayload) {
+export async function updateRider(id: string, payload: Partial<RiderUpdatePayload>) {
   const response = await apiClient.patch(`/riders/${id}`, payload);
   return unwrapData<{ rider: Rider }>(response.data).rider;
 }

@@ -6,6 +6,7 @@ export type HubPayload = {
   name: string;
   city: string;
   state: string;
+  address?: Record<string, unknown> | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
   isActive?: boolean;
@@ -14,6 +15,11 @@ export type HubPayload = {
 export async function listHubs(params: PaginatedListParams) {
   const response = await apiClient.get("/hubs", { params });
   return unwrapData<{ hubs: Hub[]; pagination: PaginationMeta }>(response.data);
+}
+
+export async function getHub(id: string) {
+  const response = await apiClient.get(`/hubs/${id}`);
+  return unwrapData<{ hub: Hub }>(response.data).hub;
 }
 
 export async function createHub(payload: HubPayload) {

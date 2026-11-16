@@ -5,6 +5,7 @@ import type { RateCard } from "@/features/shared/entities";
 export type RateCardPayload = {
   name: string;
   code?: string;
+  description?: string | null;
   rentalType?: "B2C" | "B2B" | null;
   dailyRate: string;
   weeklyRate?: string | null;
@@ -14,6 +15,7 @@ export type RateCardPayload = {
   vehicleCategory?: string | null;
   effectiveFrom: string;
   effectiveTo?: string | null;
+  terms?: unknown;
   isActive?: boolean;
 };
 
@@ -22,6 +24,11 @@ export async function listRateCards(params: PaginatedListParams) {
   return unwrapData<{ rateCards: RateCard[]; pagination: PaginationMeta }>(
     response.data,
   );
+}
+
+export async function getRateCard(id: string) {
+  const response = await apiClient.get(`/ratecards/${id}`);
+  return unwrapData<{ rateCard: RateCard }>(response.data).rateCard;
 }
 
 export async function createRateCard(payload: RateCardPayload) {

@@ -51,8 +51,8 @@ export default function AppLayout() {
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
     Database: true,
-    Admin: false,
   }));
+
 
   useEffect(() => {
     if (activeGroup) {

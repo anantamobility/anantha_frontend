@@ -22,16 +22,19 @@ export const APP_NAV: NavEntry[] = [
       { label: "Vehicles", path: "/vehicles", resource: "vehicle" },
       { label: "Riders", path: "/riders", resource: "rider" },
       { label: "Rate Cards", path: "/ratecards", resource: "ratecard" },
+      { label: "Staff", path: "/staff", resource: "staff" },
     ],
   },
   {
-    type: "group",
-    label: "Admin",
-    children: [
-      { label: "Users", path: "/users", resource: "user" },
-      { label: "Staff", path: "/staff", resource: "staff" },
-      { label: "Roles", path: "/roles", resource: "role" },
-      { label: "Audit logs", path: "/audit-logs", resource: "auditLog" },
-    ],
+    type: "link",
+    label: "Roles and permissions",
+    path: "/roles",
+    resource: "role",
+  },
+  {
+    type: "link",
+    label: "Audit logs",
+    path: "/audit-logs",
+    resource: "auditLog",
   },
 ];
