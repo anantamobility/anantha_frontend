@@ -4,7 +4,8 @@ import type { Hub } from "@/features/shared/entities";
 
 export type HubPayload = {
   name: string;
-  code: string;
+  city: string;
+  state: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
   isActive?: boolean;

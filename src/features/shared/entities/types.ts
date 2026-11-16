@@ -1,7 +1,9 @@
 export type Hub = {
   id: string;
   name: string;
-  code: string;
+  hubCode: string;
+  city: string;
+  state: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
   isActive: boolean;
@@ -16,31 +18,32 @@ export type Vehicle = {
   model?: string | null;
   year?: number | null;
   status: string;
+  statusChangedAt?: string | null;
   isActive: boolean;
+};
+
+export type RiderUser = {
+  id: string;
+  email?: string | null;
+  phoneNumber: string;
 };
 
 export type Rider = {
   id: string;
+  userId?: string;
   fullName: string;
   riderCode?: string | null;
-  phoneNumber: string;
-  email?: string | null;
   status: string;
+  statusChangedAt?: string | null;
   rentalType: string;
   b2cMode?: string | null;
+  b2bRiderMgmt?: string | null;
   clientId?: string | null;
   hubId?: string | null;
-};
-
-export type Client = {
-  id: string;
-  clientCode: string;
-  type: string;
-  name: string;
-  companyName?: string | null;
-  email?: string | null;
-  phoneNumber?: string | null;
-  isActive: boolean;
+  dateOfBirth?: string | null;
+  policeVerificationValidUpto?: string | null;
+  backgroundVerificationExpiryDate?: string | null;
+  user?: RiderUser | null;
 };
 
 export type RateCard = {
@@ -48,10 +51,13 @@ export type RateCard = {
   code: string;
   name: string;
   rentalType?: string | null;
-  billingFrequency?: string | null;
   dailyRate: string | number;
   weeklyRate?: string | number | null;
+  fortnightlyRate?: string | number | null;
+  monthlyRate?: string | number | null;
   securityDeposit?: string | number | null;
-  currency: string;
+  vehicleCategory?: string | null;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
   isActive: boolean;
 };

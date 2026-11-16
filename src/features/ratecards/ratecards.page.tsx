@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import type { RateCard } from "@/features/shared/entities";
-import { useClientsQuery } from "@/features/shared/entities";
 import {
   ConfirmDialog,
   DataTable,
@@ -21,13 +20,15 @@ import { useRateCardMutations } from "./hooks/useRateCardMutations";
 const EMPTY = {
   name: "",
   code: "",
-  rentalType: "B2C" as "B2C" | "B2B",
-  billingFrequency: "WEEKLY" as "WEEKLY" | "FORTNIGHTLY" | "MONTHLY",
+  rentalType: "" as "" | "B2C" | "B2B",
   dailyRate: "250",
   weeklyRate: "1500",
+  fortnightlyRate: "",
+  monthlyRate: "",
   securityDeposit: "3000",
-  vehicleCategory: "BIKE",
+  vehicleCategory: "",
   effectiveFrom: new Date().toISOString().slice(0, 10),
+  isActive: true,
 };
 
 export default function RateCardsPage() {
@@ -38,12 +39,9 @@ export default function RateCardsPage() {
   const [editing, setEditing] = useState<RateCard | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [assignTarget, setAssignTarget] = useState<RateCard | null>(null);
-  const [assignClientId, setAssignClientId] = useState("");
 
   const listQuery = useRateCardsListQuery(page, 20, search);
-  const clientsQuery = useClientsQuery();
-  const { createMutation, updateMutation, deleteMutation, assignMutation } =
+  const { createMutation, updateMutation, deleteMutation, statusMutation } =
     useRateCardMutations();
   const rateCards = listQuery.data?.rateCards ?? [];
   const pagination = listQuery.data?.pagination;
@@ -56,7 +54,7 @@ export default function RateCardsPage() {
       {
         id: "daily",
         header: "Daily",
-        cell: (row) => formatMoney(row.dailyRate, row.currency || "INR"),
+        cell: (row) => formatMoney(row.dailyRate),
       },
       {
         id: "status",
@@ -68,7 +66,7 @@ export default function RateCardsPage() {
         header: "",
         cell: (row) =>
           canWrite ? (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className="text-xs text-primary"
@@ -77,15 +75,17 @@ export default function RateCardsPage() {
                   setForm({
                     name: row.name,
                     code: row.code,
-                    rentalType: (row.rentalType as "B2C" | "B2B") || "B2C",
-                    billingFrequency:
-                      (row.billingFrequency as typeof EMPTY.billingFrequency) ||
-                      "WEEKLY",
+                    rentalType: (row.rentalType as "B2C" | "B2B") || "",
                     dailyRate: String(row.dailyRate),
                     weeklyRate: String(row.weeklyRate ?? ""),
+                    fortnightlyRate: String(row.fortnightlyRate ?? ""),
+                    monthlyRate: String(row.monthlyRate ?? ""),
                     securityDeposit: String(row.securityDeposit ?? ""),
-                    vehicleCategory: "BIKE",
-                    effectiveFrom: new Date().toISOString().slice(0, 10),
+                    vehicleCategory: row.vehicleCategory ?? "",
+                    effectiveFrom: row.effectiveFrom
+                      ? row.effectiveFrom.slice(0, 10)
+                      : new Date().toISOString().slice(0, 10),
+                    isActive: row.isActive,
                   });
                   setFormOpen(true);
                 }}
@@ -95,12 +95,14 @@ export default function RateCardsPage() {
               <button
                 type="button"
                 className="text-xs text-primary"
-                onClick={() => {
-                  setAssignTarget(row);
-                  setAssignClientId("");
-                }}
+                onClick={() =>
+                  statusMutation.mutate({
+                    id: row.id,
+                    payload: { isActive: !row.isActive },
+                  })
+                }
               >
-                Assign
+                {row.isActive ? "Deactivate" : "Activate"}
               </button>
               <button
                 type="button"
@@ -113,22 +115,27 @@ export default function RateCardsPage() {
           ) : null,
       },
     ],
-    [canWrite],
+    [canWrite, statusMutation],
   );
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const payload = {
       name: form.name.trim(),
-      rentalType: form.rentalType,
-      billingFrequency: form.billingFrequency,
+      rentalType: form.rentalType || null,
       dailyRate: form.dailyRate,
       weeklyRate: form.weeklyRate || null,
+      fortnightlyRate: form.fortnightlyRate || null,
+      monthlyRate: form.monthlyRate || null,
       securityDeposit: form.securityDeposit || null,
-      vehicleCategory: form.vehicleCategory || null,
-      currency: "INR",
+      vehicleCategory: form.vehicleCategory.trim() || null,
       effectiveFrom: form.effectiveFrom,
-      ...(editing ? {} : { code: form.code.trim() || undefined }),
+      ...(editing
+        ? {}
+        : {
+            code: form.code.trim() || undefined,
+            isActive: form.isActive,
+          }),
     };
     if (editing) await updateMutation.mutateAsync({ id: editing.id, payload });
     else await createMutation.mutateAsync(payload);
@@ -209,42 +216,24 @@ export default function RateCardsPage() {
               />
             </label>
           ) : null}
+          <label className="block text-sm">
+            Type
+            <select
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={form.rentalType}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  rentalType: e.target.value as "" | "B2C" | "B2B",
+                }))
+              }
+            >
+              <option value="">Any</option>
+              <option value="B2C">B2C</option>
+              <option value="B2B">B2B</option>
+            </select>
+          </label>
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              Type
-              <select
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.rentalType}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    rentalType: e.target.value as "B2C" | "B2B",
-                  }))
-                }
-              >
-                <option value="B2C">B2C</option>
-                <option value="B2B">B2B</option>
-              </select>
-            </label>
-            <label className="block text-sm">
-              Billing
-              <select
-                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.billingFrequency}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    billingFrequency: e.target.value as typeof EMPTY.billingFrequency,
-                  }))
-                }
-              >
-                <option value="WEEKLY">Weekly</option>
-                <option value="FORTNIGHTLY">Fortnightly</option>
-                <option value="MONTHLY">Monthly</option>
-              </select>
-            </label>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
             <label className="block text-sm">
               Daily
               <input
@@ -263,16 +252,44 @@ export default function RateCardsPage() {
               />
             </label>
             <label className="block text-sm">
-              Deposit
+              Fortnightly
               <input
                 className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-                value={form.securityDeposit}
+                value={form.fortnightlyRate}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, securityDeposit: e.target.value }))
+                  setForm((p) => ({ ...p, fortnightlyRate: e.target.value }))
                 }
               />
             </label>
+            <label className="block text-sm">
+              Monthly
+              <input
+                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                value={form.monthlyRate}
+                onChange={(e) => setForm((p) => ({ ...p, monthlyRate: e.target.value }))}
+              />
+            </label>
           </div>
+          <label className="block text-sm">
+            Security deposit
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={form.securityDeposit}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, securityDeposit: e.target.value }))
+              }
+            />
+          </label>
+          <label className="block text-sm">
+            Vehicle category
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={form.vehicleCategory}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, vehicleCategory: e.target.value }))
+              }
+            />
+          </label>
           <label className="block text-sm">
             Effective from
             <input
@@ -283,61 +300,20 @@ export default function RateCardsPage() {
               required
             />
           </label>
+          {!editing ? (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+              />
+              Active
+            </label>
+          ) : null}
           <div className="flex justify-end gap-2 pt-2">
             <FormActions
               onCancel={() => setFormOpen(false)}
               loading={createMutation.isPending || updateMutation.isPending}
-            />
-          </div>
-        </form>
-      </EntityFormDialog>
-
-      <EntityFormDialog
-        open={!!assignTarget}
-        title={
-          assignTarget
-            ? `Assign ${assignTarget.code} to client`
-            : "Assign rate card"
-        }
-        onClose={() => setAssignTarget(null)}
-      >
-        <form
-          className="space-y-3"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (!assignTarget || !assignClientId) return;
-            await assignMutation.mutateAsync({
-              clientId: assignClientId,
-              rateCardId: assignTarget.id,
-              validFrom: new Date().toISOString().slice(0, 10),
-            });
-            setAssignTarget(null);
-            setAssignClientId("");
-          }}
-        >
-          <label className="block text-sm">
-            Client
-            <select
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={assignClientId}
-              onChange={(e) => setAssignClientId(e.target.value)}
-              required
-            >
-              <option value="">Select client</option>
-              {(clientsQuery.data?.clients ?? [])
-                .filter((c) => c.isActive)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.clientCode})
-                  </option>
-                ))}
-            </select>
-          </label>
-          <div className="flex justify-end gap-2 pt-2">
-            <FormActions
-              onCancel={() => setAssignTarget(null)}
-              loading={assignMutation.isPending}
-              submitLabel="Assign"
             />
           </div>
         </form>

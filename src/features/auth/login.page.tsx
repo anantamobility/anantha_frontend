@@ -19,7 +19,7 @@ export default function LoginPage() {
       const result = await loginRequest(phone.trim(), password);
       setSession(result.accessToken, result.user);
       notifySuccess(`Welcome, ${result.user.name}`);
-      navigate("/dashboard", { replace: true });
+      navigate("/hubs", { replace: true });
     } catch (error) {
       notifyError(getErrorMessage(error, "Login failed"));
     } finally {

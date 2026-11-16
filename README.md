@@ -25,15 +25,24 @@ npm run dev            # port 3030
 
 Demo login: `9000000000` / `DemoPassword123`
 
+## Live surface (aligned with backend)
+
+Only APIs that are currently live on `anantha_backend` are wired:
+
+- **Database:** Hubs, Vehicles, Riders (incl. status + documents), Rate cards
+- **Admin:** Users (incl. admin password reset), Staff, Roles/PBAC, Audit logs
+- **Auth:** Login, logout, refresh, change-password, admin reset-password
+
+Home redirects to `/hubs`. Dead modules (dashboard/clients/rentals/collections) are removed until backend re-enables them.
+
 ## Demo script
 
-1. Sign in as admin.
-2. Open **Dashboard** — KPIs load for the selected date range.
-3. Browse **Hubs / Vehicles / Riders / Clients**.
-4. On **Rate cards**, use **Assign** to link a rate card to a client (required before rental create).
-5. **Rentals** → Create (client + rider + rate card + optional vehicle) → Assign vehicle if needed → **Activate** → **Generate dues**.
-6. **Collections** → Record collection against an active rental (cleared payments allocate to dues).
-7. Sidebar hides modules the soft role map cannot access; API 403 remains authoritative.
+1. Sign in as admin → lands on **Hubs**.
+2. Create a hub (`city` + `state`; `hubCode` is generated).
+3. Create vehicles / riders (rider create requires a strong password).
+4. Use rider **Status** / **Docs** actions; PVC/BGV are date fields + document types, not a verification workflow.
+5. Manage **Users** (reset password, role, status) and **Staff** (how operator accounts are created).
+6. Soft RBAC hides nav items; API 403 remains authoritative.
 
 ## Architecture
 

@@ -6,13 +6,14 @@ export type RateCardPayload = {
   name: string;
   code?: string;
   rentalType?: "B2C" | "B2B" | null;
-  billingFrequency?: "WEEKLY" | "FORTNIGHTLY" | "MONTHLY" | null;
   dailyRate: string;
   weeklyRate?: string | null;
+  fortnightlyRate?: string | null;
+  monthlyRate?: string | null;
   securityDeposit?: string | null;
-  currency?: string;
   vehicleCategory?: string | null;
-  effectiveFrom?: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
   isActive?: boolean;
 };
 
@@ -33,18 +34,14 @@ export async function updateRateCard(id: string, payload: Partial<RateCardPayloa
   return unwrapData<{ rateCard: RateCard }>(response.data).rateCard;
 }
 
-export async function deleteRateCard(id: string) {
-  await apiClient.delete(`/ratecards/${id}`);
+export async function updateRateCardStatus(
+  id: string,
+  payload: { isActive: boolean; reason?: string },
+) {
+  const response = await apiClient.patch(`/ratecards/${id}/status`, payload);
+  return unwrapData<{ rateCard: RateCard }>(response.data).rateCard;
 }
 
-export type AssignRateCardPayload = {
-  clientId: string;
-  rateCardId: string;
-  validFrom?: string;
-  reason?: string | null;
-};
-
-export async function assignRateCardToClient(payload: AssignRateCardPayload) {
-  const response = await apiClient.post("/ratecard-assignments", payload);
-  return unwrapData(response.data);
+export async function deleteRateCard(id: string) {
+  await apiClient.delete(`/ratecards/${id}`);
 }

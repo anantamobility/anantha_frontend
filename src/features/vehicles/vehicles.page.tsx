@@ -14,8 +14,18 @@ import {
   type DataTableColumn,
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
+import type { VehicleStatusPayload } from "./api/vehicles.api";
 import { useVehiclesListQuery } from "./hooks/useVehiclesQuery";
 import { useVehicleMutations } from "./hooks/useVehicleMutations";
+
+const VEHICLE_STATUSES: VehicleStatusPayload["status"][] = [
+  "IDLE",
+  "DEPLOYED",
+  "IN_SERVICE",
+  "UNDER_REPAIR",
+  "OUT_OF_SERVICE",
+  "RETIRED",
+];
 
 const EMPTY = {
   registrationNumber: "",
@@ -34,10 +44,16 @@ export default function VehiclesPage() {
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [statusTarget, setStatusTarget] = useState<Vehicle | null>(null);
+  const [statusForm, setStatusForm] = useState({
+    status: "IDLE" as VehicleStatusPayload["status"],
+    reason: "",
+  });
 
   const listQuery = useVehiclesListQuery(page, 20, search);
   const hubsQuery = useHubsQuery();
-  const { createMutation, updateMutation, deleteMutation } = useVehicleMutations();
+  const { createMutation, updateMutation, deleteMutation, statusMutation } =
+    useVehicleMutations();
   const vehicles = listQuery.data?.vehicles ?? [];
   const pagination = listQuery.data?.pagination;
   const hubs = hubsQuery.data?.hubs ?? [];
@@ -61,7 +77,7 @@ export default function VehiclesPage() {
         header: "",
         cell: (row) =>
           canManageMasterData ? (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className="text-xs text-primary"
@@ -79,6 +95,19 @@ export default function VehiclesPage() {
                 }}
               >
                 Edit
+              </button>
+              <button
+                type="button"
+                className="text-xs text-primary"
+                onClick={() => {
+                  setStatusTarget(row);
+                  setStatusForm({
+                    status: row.status as VehicleStatusPayload["status"],
+                    reason: "",
+                  });
+                }}
+              >
+                Status
               </button>
               <button
                 type="button"
@@ -232,6 +261,72 @@ export default function VehiclesPage() {
             <FormActions
               onCancel={() => setFormOpen(false)}
               loading={createMutation.isPending || updateMutation.isPending}
+            />
+          </div>
+        </form>
+      </EntityFormDialog>
+
+      <EntityFormDialog
+        open={!!statusTarget}
+        title={
+          statusTarget
+            ? `Status — ${statusTarget.registrationNumber}`
+            : "Vehicle status"
+        }
+        onClose={() => setStatusTarget(null)}
+      >
+        <form
+          className="space-y-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!statusTarget) return;
+            await statusMutation.mutateAsync({
+              id: statusTarget.id,
+              payload: {
+                status: statusForm.status,
+                reason: statusForm.reason.trim() || undefined,
+              },
+            });
+            setStatusTarget(null);
+          }}
+        >
+          <label className="block text-sm">
+            Status
+            <select
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={statusForm.status}
+              onChange={(e) =>
+                setStatusForm((p) => ({
+                  ...p,
+                  status: e.target.value as VehicleStatusPayload["status"],
+                }))
+              }
+            >
+              {VEHICLE_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            Reason
+            <input
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={statusForm.reason}
+              onChange={(e) => setStatusForm((p) => ({ ...p, reason: e.target.value }))}
+            />
+          </label>
+          {statusTarget?.statusChangedAt ? (
+            <p className="text-xs text-muted-foreground">
+              Last changed: {new Date(statusTarget.statusChangedAt).toLocaleString()}
+            </p>
+          ) : null}
+          <div className="flex justify-end gap-2 pt-2">
+            <FormActions
+              onCancel={() => setStatusTarget(null)}
+              loading={statusMutation.isPending}
+              submitLabel="Update status"
             />
           </div>
         </form>

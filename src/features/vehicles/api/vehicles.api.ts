@@ -11,6 +11,18 @@ export type VehiclePayload = {
   isActive?: boolean;
 };
 
+export type VehicleStatusPayload = {
+  status:
+    | "IDLE"
+    | "DEPLOYED"
+    | "IN_SERVICE"
+    | "UNDER_REPAIR"
+    | "OUT_OF_SERVICE"
+    | "RETIRED";
+  reason?: string;
+  notes?: string;
+};
+
 export async function listVehicles(params: PaginatedListParams) {
   const response = await apiClient.get("/vehicles", { params });
   return unwrapData<{ vehicles: Vehicle[]; pagination: PaginationMeta }>(response.data);
@@ -23,6 +35,11 @@ export async function createVehicle(payload: VehiclePayload) {
 
 export async function updateVehicle(id: string, payload: Partial<VehiclePayload>) {
   const response = await apiClient.patch(`/vehicles/${id}`, payload);
+  return unwrapData<{ vehicle: Vehicle }>(response.data).vehicle;
+}
+
+export async function updateVehicleStatus(id: string, payload: VehicleStatusPayload) {
+  const response = await apiClient.patch(`/vehicles/${id}/status`, payload);
   return unwrapData<{ vehicle: Vehicle }>(response.data).vehicle;
 }
 

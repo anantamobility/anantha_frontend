@@ -18,7 +18,8 @@ import { useHubMutations } from "./hooks/useHubMutations";
 
 const EMPTY_FORM = {
   name: "",
-  code: "",
+  city: "",
+  state: "",
   contactPhone: "",
   contactEmail: "",
   isActive: true,
@@ -42,7 +43,12 @@ export default function HubsPage() {
   const columns = useMemo<DataTableColumn<Hub>[]>(
     () => [
       { id: "name", header: "Name", cell: (row) => row.name },
-      { id: "code", header: "Code", cell: (row) => row.code },
+      { id: "code", header: "Code", cell: (row) => row.hubCode },
+      {
+        id: "location",
+        header: "Location",
+        cell: (row) => `${row.city}, ${row.state}`,
+      },
       {
         id: "contact",
         header: "Contact",
@@ -66,7 +72,8 @@ export default function HubsPage() {
                   setEditing(row);
                   setForm({
                     name: row.name,
-                    code: row.code,
+                    city: row.city,
+                    state: row.state,
                     contactPhone: row.contactPhone ?? "",
                     contactEmail: row.contactEmail ?? "",
                     isActive: row.isActive,
@@ -94,21 +101,14 @@ export default function HubsPage() {
     event.preventDefault();
     const payload = {
       name: form.name.trim(),
-      code: form.code.trim(),
+      city: form.city.trim(),
+      state: form.state.trim(),
       contactPhone: form.contactPhone.trim() || null,
       contactEmail: form.contactEmail.trim() || null,
       isActive: form.isActive,
     };
     if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        payload: {
-          name: payload.name,
-          contactPhone: payload.contactPhone,
-          contactEmail: payload.contactEmail,
-          isActive: payload.isActive,
-        },
-      });
+      await updateMutation.mutateAsync({ id: editing.id, payload });
     } else {
       await createMutation.mutateAsync(payload);
     }
@@ -181,16 +181,35 @@ export default function HubsPage() {
               required
             />
           </label>
-          <label className="block text-sm">
-            Code
-            <input
-              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
-              value={form.code}
-              onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-              required
-              disabled={!!editing}
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              City
+              <input
+                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                value={form.city}
+                onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+                required
+              />
+            </label>
+            <label className="block text-sm">
+              State
+              <input
+                className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+                value={form.state}
+                onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
+                required
+              />
+            </label>
+          </div>
+          {editing ? (
+            <p className="text-xs text-muted-foreground">
+              Hub code: <span className="font-medium">{editing.hubCode}</span> (read-only)
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Hub code is generated from city and state on create.
+            </p>
+          )}
           <label className="block text-sm">
             Phone
             <input

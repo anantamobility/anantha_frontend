@@ -5,10 +5,11 @@ import { useAuth } from "@/features/shared/context/authContext";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import { APP_NAV, type NavLeaf } from "@/features/shared/config/routeConfig";
 import { BrandLogo } from "@/features/shared/components/common";
-import { logoutRequest } from "@/features/auth/api/auth.api";
+import { changePasswordRequest, logoutRequest } from "@/features/auth/api/auth.api";
 import { notifyError, notifySuccess } from "@/features/shared/utils/notify";
 import { getErrorMessage } from "@/features/shared/api/client";
 import { cn } from "@/features/shared/utils/cn";
+import { EntityFormDialog, FormActions } from "@/features/shared/components/common";
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return cn(
@@ -23,26 +24,41 @@ export default function AppLayout() {
   const { user, clearSession } = useAuth();
   const { canAccessModule } = useRbac();
   const location = useLocation();
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [oldpassword, setOldpassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
-  const databasePaths = useMemo(
-    () =>
-      APP_NAV.flatMap((entry) =>
-        entry.type === "group" && entry.label === "Database"
-          ? entry.children.map((child) => child.path)
-          : [],
-      ),
-    [],
-  );
+  const groupPaths = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const entry of APP_NAV) {
+      if (entry.type === "group") {
+        map.set(
+          entry.label,
+          entry.children.map((child) => child.path),
+        );
+      }
+    }
+    return map;
+  }, []);
 
-  const isDatabaseRoute = databasePaths.some((path) =>
-    location.pathname.startsWith(path),
-  );
+  const activeGroup = useMemo(() => {
+    for (const [label, paths] of groupPaths) {
+      if (paths.some((path) => location.pathname.startsWith(path))) return label;
+    }
+    return null;
+  }, [groupPaths, location.pathname]);
 
-  const [databaseOpen, setDatabaseOpen] = useState(isDatabaseRoute);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
+    Database: true,
+    Admin: false,
+  }));
 
   useEffect(() => {
-    if (isDatabaseRoute) setDatabaseOpen(true);
-  }, [isDatabaseRoute]);
+    if (activeGroup) {
+      setOpenGroups((prev) => ({ ...prev, [activeGroup]: true }));
+    }
+  }, [activeGroup]);
 
   const handleLogout = async () => {
     try {
@@ -59,9 +75,7 @@ export default function AppLayout() {
     <NavLink
       key={item.path}
       to={item.path}
-      className={({ isActive }) =>
-        cn(navLinkClass({ isActive }), indented && "pl-6")
-      }
+      className={({ isActive }) => cn(navLinkClass({ isActive }), indented && "pl-6")}
     >
       {item.label}
     </NavLink>
@@ -86,20 +100,21 @@ export default function AppLayout() {
             );
             if (visibleChildren.length === 0) return null;
 
-            const open = entry.label === "Database" ? databaseOpen : false;
+            const open = openGroups[entry.label] ?? false;
 
             return (
               <div key={entry.label} className="space-y-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (entry.label === "Database") {
-                      setDatabaseOpen((prev) => !prev);
-                    }
-                  }}
+                  onClick={() =>
+                    setOpenGroups((prev) => ({
+                      ...prev,
+                      [entry.label]: !prev[entry.label],
+                    }))
+                  }
                   className={cn(
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition",
-                    isDatabaseRoute && entry.label === "Database"
+                    activeGroup === entry.label
                       ? "bg-white/10 text-white"
                       : "text-white/80 hover:bg-white/10 hover:text-white",
                   )}
@@ -127,8 +142,19 @@ export default function AppLayout() {
           <p className="truncate">{user?.role}</p>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => {
+              setOldpassword("");
+              setNewPassword("");
+              setPasswordOpen(true);
+            }}
             className="mt-3 w-full rounded-md border border-white/20 px-2 py-1.5 text-left hover:bg-white/10"
+          >
+            Change password
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-2 w-full rounded-md border border-white/20 px-2 py-1.5 text-left hover:bg-white/10"
           >
             Sign out
           </button>
@@ -138,6 +164,62 @@ export default function AppLayout() {
       <main className="min-w-0 flex-1 overflow-y-auto p-6">
         <Outlet />
       </main>
+
+      <EntityFormDialog
+        open={passwordOpen}
+        title="Change password"
+        onClose={() => setPasswordOpen(false)}
+      >
+        <form
+          className="space-y-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setPasswordLoading(true);
+            try {
+              await changePasswordRequest(oldpassword, newPassword);
+              notifySuccess("Password updated — sign in again");
+              setPasswordOpen(false);
+              clearSession();
+            } catch (error) {
+              notifyError(getErrorMessage(error, "Failed to change password"));
+            } finally {
+              setPasswordLoading(false);
+            }
+          }}
+        >
+          <label className="block text-sm">
+            Current password
+            <input
+              type="password"
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={oldpassword}
+              onChange={(e) => setOldpassword(e.target.value)}
+              required
+            />
+          </label>
+          <label className="block text-sm">
+            New password
+            <input
+              type="password"
+              className="mt-1 h-9 w-full rounded-lg border border-border px-3"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+          </label>
+          <p className="text-xs text-muted-foreground">
+            At least 8 characters with one letter and one digit.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <FormActions
+              onCancel={() => setPasswordOpen(false)}
+              loading={passwordLoading}
+              submitLabel="Update"
+            />
+          </div>
+        </form>
+      </EntityFormDialog>
     </div>
   );
 }

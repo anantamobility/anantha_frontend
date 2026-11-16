@@ -6,7 +6,9 @@ import {
   createVehicle,
   deleteVehicle,
   updateVehicle,
+  updateVehicleStatus,
   type VehiclePayload,
+  type VehicleStatusPayload,
 } from "../api/vehicles.api";
 import { vehicleKeys } from "./useVehiclesQuery";
 
@@ -20,33 +22,41 @@ async function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
 export function useVehicleMutations() {
   const queryClient = useQueryClient();
 
-  const createMutation = useMutation({
-    mutationFn: (payload: VehiclePayload) => createVehicle(payload),
-    onSuccess: async () => {
-      await invalidate(queryClient);
-      notifySuccess("Vehicle created");
-    },
-    onError: (error) => notifyError(getErrorMessage(error, "Failed to create vehicle")),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<VehiclePayload> }) =>
-      updateVehicle(id, payload),
-    onSuccess: async () => {
-      await invalidate(queryClient);
-      notifySuccess("Vehicle updated");
-    },
-    onError: (error) => notifyError(getErrorMessage(error, "Failed to update vehicle")),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteVehicle(id),
-    onSuccess: async () => {
-      await invalidate(queryClient);
-      notifySuccess("Vehicle deleted");
-    },
-    onError: (error) => notifyError(getErrorMessage(error, "Failed to delete vehicle")),
-  });
-
-  return { createMutation, updateMutation, deleteMutation };
+  return {
+    createMutation: useMutation({
+      mutationFn: (payload: VehiclePayload) => createVehicle(payload),
+      onSuccess: async () => {
+        await invalidate(queryClient);
+        notifySuccess("Vehicle created");
+      },
+      onError: (error) => notifyError(getErrorMessage(error, "Failed to create vehicle")),
+    }),
+    updateMutation: useMutation({
+      mutationFn: ({ id, payload }: { id: string; payload: Partial<VehiclePayload> }) =>
+        updateVehicle(id, payload),
+      onSuccess: async () => {
+        await invalidate(queryClient);
+        notifySuccess("Vehicle updated");
+      },
+      onError: (error) => notifyError(getErrorMessage(error, "Failed to update vehicle")),
+    }),
+    statusMutation: useMutation({
+      mutationFn: ({ id, payload }: { id: string; payload: VehicleStatusPayload }) =>
+        updateVehicleStatus(id, payload),
+      onSuccess: async () => {
+        await invalidate(queryClient);
+        notifySuccess("Vehicle status updated");
+      },
+      onError: (error) =>
+        notifyError(getErrorMessage(error, "Failed to update vehicle status")),
+    }),
+    deleteMutation: useMutation({
+      mutationFn: (id: string) => deleteVehicle(id),
+      onSuccess: async () => {
+        await invalidate(queryClient);
+        notifySuccess("Vehicle deleted");
+      },
+      onError: (error) => notifyError(getErrorMessage(error, "Failed to delete vehicle")),
+    }),
+  };
 }
