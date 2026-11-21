@@ -35,6 +35,7 @@ import {
   type RiderDocument,
   type RiderStatusPayload,
 } from "./api/riders.api";
+import { RiderImportDialog } from "./components/RiderImportDialog";
 import { useRidersListQuery } from "./hooks/useRidersQuery";
 import { useRiderMutations } from "./hooks/useRiderMutations";
 
@@ -92,6 +93,7 @@ export default function RidersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Rider | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -316,17 +318,26 @@ export default function RidersPage() {
         description="Driver / rider master data — full profile."
         actions={
           canManageMasterData ? (
-            <button
-              type="button"
-              className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
-              onClick={() => {
-                setEditing(null);
-                setForm(EMPTY);
-                setFormOpen(true);
-              }}
-            >
-              Add rider
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border px-3 py-2 text-sm"
+                onClick={() => setImportOpen(true)}
+              >
+                Import
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                onClick={() => {
+                  setEditing(null);
+                  setForm(EMPTY);
+                  setFormOpen(true);
+                }}
+              >
+                Add rider
+              </button>
+            </div>
           ) : null
         }
       />
@@ -946,6 +957,11 @@ export default function RidersPage() {
           await deleteMutation.mutateAsync(deleteId);
           setDeleteId(null);
         }}
+      />
+
+      <RiderImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
     </div>
   );

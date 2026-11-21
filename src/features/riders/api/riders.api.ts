@@ -1,6 +1,11 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
 import type { Rider } from "@/features/shared/entities";
+import type {
+  RiderImportCommitResponse,
+  RiderImportRow,
+  RiderImportValidateResponse,
+} from "./riderImport.types";
 
 export type RiderAddressPayload = {
   line1?: string;
@@ -140,4 +145,14 @@ export async function downloadRiderDocument(
 
 export async function deleteRiderDocument(riderId: string, documentId: string) {
   await apiClient.delete(`/riders/${riderId}/documents/${documentId}`);
+}
+
+export async function validateRiderImport(rows: RiderImportRow[]) {
+  const response = await apiClient.post("/riders/import/validate", { rows });
+  return unwrapData<RiderImportValidateResponse>(response.data);
+}
+
+export async function importRiders(rows: RiderImportRow[]) {
+  const response = await apiClient.post("/riders/import", { rows });
+  return unwrapData<RiderImportCommitResponse>(response.data);
 }
