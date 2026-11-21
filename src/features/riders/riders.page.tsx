@@ -171,7 +171,7 @@ export default function RidersPage() {
                   try {
                     const detail = await getRider(row.id);
                     setEditing(detail);
-                    setForm({
+                  setForm({
                       fullName: detail.fullName,
                       riderCode: detail.riderCode ?? "",
                       phoneNumber: detail.user?.phoneNumber ?? "",
@@ -209,8 +209,8 @@ export default function RidersPage() {
                       clientId: detail.clientId ?? "",
                       hubId: detail.hubId ?? "",
                       address: addressFromUnknown(detail.address),
-                    });
-                    setFormOpen(true);
+                  });
+                  setFormOpen(true);
                   } catch (error) {
                     notifyError(getErrorMessage(error, "Failed to load rider"));
                   }
@@ -263,7 +263,7 @@ export default function RidersPage() {
   );
 
   const profilePayload = () => ({
-    fullName: form.fullName.trim(),
+      fullName: form.fullName.trim(),
     riderCode: form.riderCode.trim() || undefined,
     dateOfBirth: emptyToDate(form.dateOfBirth),
     gender: form.gender || null,
@@ -282,11 +282,11 @@ export default function RidersPage() {
     dateOfLastWorkingDay: emptyToDate(form.dateOfLastWorkingDay),
     bankName: emptyToNull(form.bankName),
     branch: emptyToNull(form.branch),
-    rentalType: form.rentalType,
-    b2cMode: form.rentalType === "B2C" ? form.b2cMode : null,
-    b2bRiderMgmt: form.rentalType === "B2B" ? form.b2bRiderMgmt : null,
-    clientId: form.rentalType === "B2B" ? form.clientId || null : null,
-    hubId: form.hubId || null,
+      rentalType: form.rentalType,
+      b2cMode: form.rentalType === "B2C" ? form.b2cMode : null,
+      b2bRiderMgmt: form.rentalType === "B2B" ? form.b2bRiderMgmt : null,
+      clientId: form.rentalType === "B2B" ? form.clientId || null : null,
+      hubId: form.hubId || null,
   });
 
   const onSubmit = async (event: React.FormEvent) => {
@@ -364,12 +364,12 @@ export default function RidersPage() {
         <form className="space-y-4" onSubmit={onSubmit}>
           <FormSection title="Identity">
             <Field label="Full name *">
-              <input
+            <input
                 className={inputClass}
-                value={form.fullName}
-                onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
-                required
-              />
+              value={form.fullName}
+              onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+              required
+            />
             </Field>
             <Field label="Rider code (optional)">
               <input
@@ -381,21 +381,21 @@ export default function RidersPage() {
             {!editing ? (
               <>
                 <Field label="Phone *">
-                  <input
+            <input
                     className={inputClass}
-                    value={form.phoneNumber}
+              value={form.phoneNumber}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, phoneNumber: e.target.value }))
                     }
-                    required
-                  />
+              required
+            />
                 </Field>
                 <Field label="Email">
-                  <input
+            <input
                     className={inputClass}
-                    value={form.email}
-                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                  />
+              value={form.email}
+              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+            />
                 </Field>
                 <Field label="Password *">
                   <input
@@ -496,79 +496,79 @@ export default function RidersPage() {
 
           <FormSection title="Classification">
             <Field label="Rental type">
-              <select
+            <select
                 className={inputClass}
-                value={form.rentalType}
-                onChange={(e) =>
+              value={form.rentalType}
+              onChange={(e) =>
                   setForm((p) => ({
                     ...p,
                     rentalType: e.target.value as "B2C" | "B2B",
                   }))
+              }
+            >
+              <option value="B2C">B2C</option>
+              <option value="B2B">B2B</option>
+            </select>
+            </Field>
+          {form.rentalType === "B2C" ? (
+              <Field label="B2C mode">
+              <select
+                  className={inputClass}
+                value={form.b2cMode}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    b2cMode: e.target.value as typeof EMPTY.b2cMode,
+                  }))
                 }
               >
-                <option value="B2C">B2C</option>
-                <option value="B2B">B2B</option>
+                <option value="AML_RIDER">AML rider</option>
+                <option value="INDIVIDUAL_RIDER">Individual rider</option>
               </select>
-            </Field>
-            {form.rentalType === "B2C" ? (
-              <Field label="B2C mode">
+              </Field>
+          ) : (
+            <>
+                <Field label="B2B rider management">
                 <select
-                  className={inputClass}
-                  value={form.b2cMode}
+                    className={inputClass}
+                  value={form.b2bRiderMgmt}
                   onChange={(e) =>
                     setForm((p) => ({
                       ...p,
-                      b2cMode: e.target.value as typeof EMPTY.b2cMode,
+                      b2bRiderMgmt: e.target.value as typeof EMPTY.b2bRiderMgmt,
                     }))
                   }
                 >
-                  <option value="AML_RIDER">AML rider</option>
-                  <option value="INDIVIDUAL_RIDER">Individual rider</option>
+                  <option value="CLIENT_MANAGED">Client managed</option>
+                  <option value="AML_MANAGED">AML managed</option>
                 </select>
-              </Field>
-            ) : (
-              <>
-                <Field label="B2B rider management">
-                  <select
-                    className={inputClass}
-                    value={form.b2bRiderMgmt}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        b2bRiderMgmt: e.target.value as typeof EMPTY.b2bRiderMgmt,
-                      }))
-                    }
-                  >
-                    <option value="CLIENT_MANAGED">Client managed</option>
-                    <option value="AML_MANAGED">AML managed</option>
-                  </select>
                 </Field>
                 <Field label="Client ID *">
                   <input
                     className={inputClass}
-                    value={form.clientId}
+                  value={form.clientId}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, clientId: e.target.value }))
                     }
                     placeholder="UUID (clients API not live)"
-                    required
+                  required
                   />
                 </Field>
-              </>
-            )}
+            </>
+          )}
             <Field label="Hub">
-              <select
+            <select
                 className={inputClass}
-                value={form.hubId}
-                onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
-              >
-                <option value="">Unassigned</option>
-                {(hubsQuery.data?.hubs ?? []).map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-              </select>
+              value={form.hubId}
+              onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
+            >
+              <option value="">Unassigned</option>
+              {(hubsQuery.data?.hubs ?? []).map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
             </Field>
           </FormSection>
 

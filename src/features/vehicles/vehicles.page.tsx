@@ -26,6 +26,7 @@ import {
   vehicleToForm,
   type VehicleFormState,
 } from "./vehicleForm";
+import { VehicleImportDialog } from "./components/VehicleImportDialog";
 import { useVehiclesListQuery } from "./hooks/useVehiclesQuery";
 import { useVehicleMutations } from "./hooks/useVehicleMutations";
 
@@ -43,6 +44,7 @@ export default function VehiclesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [form, setForm] = useState<VehicleFormState>(EMPTY_VEHICLE_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -148,17 +150,26 @@ export default function VehiclesPage() {
         description="Fleet inventory by hub — full asset profile."
         actions={
           canManageMasterData ? (
-            <button
-              type="button"
-              className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
-              onClick={() => {
-                setEditing(null);
-                setForm(EMPTY_VEHICLE_FORM);
-                setFormOpen(true);
-              }}
-            >
-              Add vehicle
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border px-3 py-2 text-sm"
+                onClick={() => setImportOpen(true)}
+              >
+                Import
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                onClick={() => {
+                  setEditing(null);
+                  setForm(EMPTY_VEHICLE_FORM);
+                  setFormOpen(true);
+                }}
+              >
+                Add vehicle
+              </button>
+            </div>
           ) : null
         }
       />
@@ -306,22 +317,6 @@ export default function VehiclesPage() {
                   placeholder="owned / leased / financed"
                 />
               </Field>
-              <Field label="Seats">
-                <input
-                  type="number"
-                  className={inputClass}
-                  value={form.seats}
-                  onChange={(e) => setField("seats", e.target.value)}
-                />
-              </Field>
-              <Field label="Boot space (L)">
-                <input
-                  type="number"
-                  className={inputClass}
-                  value={form.bootSpace}
-                  onChange={(e) => setField("bootSpace", e.target.value)}
-                />
-              </Field>
             </div>
           </FormSection>
 
@@ -467,7 +462,6 @@ export default function VehiclesPage() {
                   ["dateOfOperation", "Operation"],
                   ["warrantyStartDate", "Warranty start"],
                   ["warrantyEndDate", "Warranty end"],
-                  ["safeCabCertificateExpiryDate", "SafeCab expiry"],
                   ["telematicsExpiryDate", "Telematics expiry"],
                 ] as const
               ).map(([key, label]) => (
@@ -663,6 +657,11 @@ export default function VehiclesPage() {
           await deleteMutation.mutateAsync(deleteId);
           setDeleteId(null);
         }}
+      />
+
+      <VehicleImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
     </div>
   );

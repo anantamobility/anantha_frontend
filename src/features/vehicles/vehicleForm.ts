@@ -19,11 +19,9 @@ export type VehicleFormState = {
   isActive: boolean;
   vehicleCategory: string;
   vehicleType: string;
-  seats: string;
   batteryType: string;
   batteryCapacity: string;
   nominalRange: string;
-  bootSpace: string;
   chargingOptions: string;
   chargerProvided: "" | "true" | "false";
   noOfTyres: string;
@@ -39,7 +37,6 @@ export type VehicleFormState = {
   dateOfOperation: string;
   warrantyStartDate: string;
   warrantyEndDate: string;
-  safeCabCertificateExpiryDate: string;
   telematicsExpiryDate: string;
   loanProvider: string;
   emiAmount: string;
@@ -67,11 +64,9 @@ export const EMPTY_VEHICLE_FORM: VehicleFormState = {
   isActive: true,
   vehicleCategory: "",
   vehicleType: "",
-  seats: "",
   batteryType: "",
   batteryCapacity: "",
   nominalRange: "",
-  bootSpace: "",
   chargingOptions: "",
   chargerProvided: "",
   noOfTyres: "",
@@ -87,7 +82,6 @@ export const EMPTY_VEHICLE_FORM: VehicleFormState = {
   dateOfOperation: "",
   warrantyStartDate: "",
   warrantyEndDate: "",
-  safeCabCertificateExpiryDate: "",
   telematicsExpiryDate: "",
   loanProvider: "",
   emiAmount: "",
@@ -116,12 +110,10 @@ export function vehicleToForm(vehicle: Vehicle): VehicleFormState {
     isActive: vehicle.isActive,
     vehicleCategory: vehicle.vehicleCategory ?? "",
     vehicleType: vehicle.vehicleType ?? "",
-    seats: vehicle.seats != null ? String(vehicle.seats) : "",
     batteryType: vehicle.batteryType ?? "",
     batteryCapacity:
       vehicle.batteryCapacity != null ? String(vehicle.batteryCapacity) : "",
     nominalRange: vehicle.nominalRange != null ? String(vehicle.nominalRange) : "",
-    bootSpace: vehicle.bootSpace != null ? String(vehicle.bootSpace) : "",
     chargingOptions: vehicle.chargingOptions ?? "",
     chargerProvided:
       vehicle.chargerProvided == null
@@ -149,7 +141,6 @@ export function vehicleToForm(vehicle: Vehicle): VehicleFormState {
     dateOfOperation: toDateInput(vehicle.dateOfOperation),
     warrantyStartDate: toDateInput(vehicle.warrantyStartDate),
     warrantyEndDate: toDateInput(vehicle.warrantyEndDate),
-    safeCabCertificateExpiryDate: toDateInput(vehicle.safeCabCertificateExpiryDate),
     telematicsExpiryDate: toDateInput(vehicle.telematicsExpiryDate),
     loanProvider: vehicle.loanProvider ?? "",
     emiAmount: vehicle.emiAmount != null ? String(vehicle.emiAmount) : "",
@@ -193,11 +184,9 @@ export function vehicleFormToPayload(form: VehicleFormState): VehiclePayload {
     isActive: form.isActive,
     vehicleCategory: emptyToNull(form.vehicleCategory),
     vehicleType: emptyToNull(form.vehicleType),
-    seats: emptyToNumber(form.seats),
     batteryType: emptyToNull(form.batteryType),
     batteryCapacity: emptyToNumber(form.batteryCapacity),
     nominalRange: emptyToNumber(form.nominalRange),
-    bootSpace: emptyToNumber(form.bootSpace),
     chargingOptions: emptyToNull(form.chargingOptions),
     chargerProvided:
       form.chargerProvided === ""
@@ -216,7 +205,6 @@ export function vehicleFormToPayload(form: VehicleFormState): VehiclePayload {
     dateOfOperation: emptyToDate(form.dateOfOperation),
     warrantyStartDate: emptyToDate(form.warrantyStartDate),
     warrantyEndDate: emptyToDate(form.warrantyEndDate),
-    safeCabCertificateExpiryDate: emptyToDate(form.safeCabCertificateExpiryDate),
     telematicsExpiryDate: emptyToDate(form.telematicsExpiryDate),
     loanProvider: emptyToNull(form.loanProvider),
     emiAmount: emptyToNumber(form.emiAmount),

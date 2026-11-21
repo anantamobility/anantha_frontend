@@ -35,11 +35,9 @@ export type Vehicle = {
   isActive: boolean;
   vehicleCategory?: string | null;
   vehicleType?: string | null;
-  seats?: number | null;
   batteryType?: string | null;
   batteryCapacity?: number | null;
   nominalRange?: number | null;
-  bootSpace?: number | null;
   chargingOptions?: string | null;
   chargerProvided?: boolean | null;
   noOfTyres?: number | null;
@@ -55,7 +53,6 @@ export type Vehicle = {
   dateOfOperation?: string | null;
   warrantyStartDate?: string | null;
   warrantyEndDate?: string | null;
-  safeCabCertificateExpiryDate?: string | null;
   telematicsExpiryDate?: string | null;
   loanProvider?: string | null;
   emiAmount?: string | number | null;

@@ -1,6 +1,11 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
 import type { Vehicle, VehicleTyre } from "@/features/shared/entities";
+import type {
+  VehicleImportCommitResponse,
+  VehicleImportRow,
+  VehicleImportValidateResponse,
+} from "./vehicleImport.types";
 
 export type VehiclePayload = {
   registrationNumber: string;
@@ -14,11 +19,9 @@ export type VehiclePayload = {
   isActive?: boolean;
   vehicleCategory?: string | null;
   vehicleType?: string | null;
-  seats?: number | null;
   batteryType?: string | null;
   batteryCapacity?: number | null;
   nominalRange?: number | null;
-  bootSpace?: number | null;
   chargingOptions?: string | null;
   chargerProvided?: boolean | null;
   noOfTyres?: number | null;
@@ -34,7 +37,6 @@ export type VehiclePayload = {
   dateOfOperation?: string | null;
   warrantyStartDate?: string | null;
   warrantyEndDate?: string | null;
-  safeCabCertificateExpiryDate?: string | null;
   telematicsExpiryDate?: string | null;
   loanProvider?: string | null;
   emiAmount?: number | null;
@@ -89,4 +91,14 @@ export async function updateVehicleStatus(id: string, payload: VehicleStatusPayl
 
 export async function deleteVehicle(id: string) {
   await apiClient.delete(`/vehicles/${id}`);
+}
+
+export async function validateVehicleImport(rows: VehicleImportRow[]) {
+  const response = await apiClient.post("/vehicles/import/validate", { rows });
+  return unwrapData<VehicleImportValidateResponse>(response.data);
+}
+
+export async function importVehicles(rows: VehicleImportRow[]) {
+  const response = await apiClient.post("/vehicles/import", { rows });
+  return unwrapData<VehicleImportCommitResponse>(response.data);
 }
