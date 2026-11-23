@@ -102,6 +102,7 @@ export type Rider = {
   bankName?: string | null;
   branch?: string | null;
   user?: RiderUser | null;
+  createdAt?: string;
 };
 
 export type RateCard = {
@@ -120,4 +121,102 @@ export type RateCard = {
   effectiveTo?: string | null;
   terms?: unknown;
   isActive: boolean;
+};
+
+export type Client = {
+  id: string;
+  clientCode?: string | null;
+  name: string;
+  companyName?: string | null;
+  contactPerson?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type Rental = {
+  id: string;
+  rentalNumber?: string;
+  rentalType: "B2C" | "B2B";
+  b2cMode?: string | null;
+  b2bRiderMgmt?: string | null;
+  status: string;
+  clientId: string;
+  riderId?: string | null;
+  hubId: string;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endDate?: string | null;
+  activatedAt?: string | null;
+  closedAt?: string | null;
+  collectionPeriod: string;
+  securityDepositRequired?: string | number | null;
+  notes?: string | null;
+  client?: { id: string; name: string; clientCode?: string | null } | null;
+  rider?: { id: string; fullName: string; riderCode?: string | null } | null;
+  hub?: { id: string; name: string; hubCode?: string } | null;
+  assignments?: Array<{
+    id: string;
+    vehicleId: string;
+    status: string;
+    vehicle?: { id: string; registrationNumber: string } | null;
+  }>;
+  createdAt?: string;
+};
+
+export type RentalDue = {
+  id: string;
+  rentalId: string;
+  status: string;
+  dueDate: string;
+  periodStart?: string;
+  periodEnd?: string;
+  amountDue?: string | number;
+  amountCollected?: string | number;
+  outstandingAmount?: string | number;
+};
+
+export type Collection = {
+  id: string;
+  rentalDueId?: string | null;
+  clientId?: string | null;
+  riderId?: string | null;
+  purpose?: string;
+  amount: string | number;
+  paymentMethod: string;
+  referenceNumber?: string | null;
+  receivedAt?: string;
+  notes?: string | null;
+  rentalDue?: {
+    id: string;
+    rentalId?: string;
+    periodStart?: string;
+    periodEnd?: string;
+  } | null;
+  createdAt?: string;
+};
+
+export type Deposit = {
+  id: string;
+  rentalId?: string;
+  amountRequired?: string | number;
+  status?: string;
+  dueDate?: string | null;
+  notes?: string | null;
+};
+
+export type LedgerEntry = {
+  id: string;
+  riderId?: string | null;
+  rentalId?: string | null;
+  entryType?: string;
+  direction?: string;
+  amount: string | number;
+  occurredAt?: string;
+  description?: string | null;
+  rider?: { id: string; riderCode?: string | null; fullName: string } | null;
+  rental?: { id: string; rentalNumber?: string; status?: string } | null;
+  createdAt?: string;
 };

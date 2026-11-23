@@ -21,8 +21,18 @@ export const APP_NAV: NavEntry[] = [
       { label: "Hubs", path: "/hubs", resource: "hub" },
       { label: "Vehicles", path: "/vehicles", resource: "vehicle" },
       { label: "Riders", path: "/riders", resource: "rider" },
+      { label: "Clients", path: "/clients", resource: "client" },
       { label: "Rate Cards", path: "/ratecards", resource: "ratecard" },
       { label: "Staff", path: "/staff", resource: "staff" },
+    ],
+  },
+  {
+    type: "group",
+    label: "Operations",
+    children: [
+      { label: "Rentals", path: "/rentals", resource: "rental" },
+      { label: "Collections", path: "/collections", resource: "collection" },
+      { label: "Ledger", path: "/ledger", resource: "ledgerEntry" },
     ],
   },
   {

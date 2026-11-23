@@ -6,8 +6,29 @@ import { useAuth } from "@/features/shared/context/authContext";
  * API 403 remains the authorization source of truth.
  */
 const ROLE_MODULE_ACCESS: Record<string, string[]> = {
-  ADMIN: ["hub", "vehicle", "rider", "ratecard", "staff", "role", "auditLog"],
-  SUPERVISOR: ["ratecard", "role", "auditLog"],
+  ADMIN: [
+    "hub",
+    "vehicle",
+    "rider",
+    "client",
+    "ratecard",
+    "staff",
+    "rental",
+    "collection",
+    "deposit",
+    "ledgerEntry",
+    "role",
+    "auditLog",
+  ],
+  SUPERVISOR: [
+    "ratecard",
+    "rental",
+    "collection",
+    "deposit",
+    "ledgerEntry",
+    "role",
+    "auditLog",
+  ],
 };
 
 export function useRbac() {

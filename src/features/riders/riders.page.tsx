@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Rider } from "@/features/shared/entities";
-import { useHubsQuery } from "@/features/shared/entities";
+import { useClientsQuery, useHubsQuery } from "@/features/shared/entities";
 import {
   ConfirmDialog,
   DataTable,
@@ -116,6 +116,7 @@ export default function RidersPage() {
 
   const listQuery = useRidersListQuery(page, 20, search);
   const hubsQuery = useHubsQuery();
+  const clientsQuery = useClientsQuery(undefined, form.rentalType === "B2B");
   const {
     createMutation,
     updateMutation,
@@ -554,16 +555,23 @@ export default function RidersPage() {
                   <option value="AML_MANAGED">AML managed</option>
                 </select>
                 </Field>
-                <Field label="Client ID *">
-                  <input
+                <Field label="Client *">
+                  <select
                     className={inputClass}
-                  value={form.clientId}
+                    value={form.clientId}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, clientId: e.target.value }))
                     }
-                    placeholder="UUID (clients API not live)"
-                  required
-                  />
+                    required
+                  >
+                    <option value="">Select client</option>
+                    {(clientsQuery.data?.clients ?? []).map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                        {client.clientCode ? ` (${client.clientCode})` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
             </>
           )}
