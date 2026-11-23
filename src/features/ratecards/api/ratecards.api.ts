@@ -13,8 +13,6 @@ export type RateCardPayload = {
   monthlyRate?: string | null;
   securityDeposit?: string | null;
   vehicleCategory?: string | null;
-  effectiveFrom: string;
-  effectiveTo?: string | null;
   terms?: unknown;
   isActive?: boolean;
 };

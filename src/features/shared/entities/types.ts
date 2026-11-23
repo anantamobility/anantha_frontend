@@ -117,8 +117,6 @@ export type RateCard = {
   monthlyRate?: string | number | null;
   securityDeposit?: string | number | null;
   vehicleCategory?: string | null;
-  effectiveFrom?: string;
-  effectiveTo?: string | null;
   terms?: unknown;
   isActive: boolean;
 };

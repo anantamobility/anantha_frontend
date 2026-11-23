@@ -19,10 +19,8 @@ import {
 import { formatMoney } from "@/features/shared/utils/money";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import {
-  emptyToDate,
   emptyToNull,
   parseOptionalJson,
-  toDateInput,
 } from "@/features/shared/utils/formValues";
 import { getErrorMessage } from "@/features/shared/api/client";
 import { notifyError } from "@/features/shared/utils/notify";
@@ -41,8 +39,6 @@ const EMPTY = {
   monthlyRate: "",
   securityDeposit: "3000",
   vehicleCategory: "",
-  effectiveFrom: new Date().toISOString().slice(0, 10),
-  effectiveTo: "",
   termsJson: "",
   isActive: true,
 };
@@ -101,8 +97,6 @@ export default function RateCardsPage() {
                       monthlyRate: String(detail.monthlyRate ?? ""),
                       securityDeposit: String(detail.securityDeposit ?? ""),
                       vehicleCategory: detail.vehicleCategory ?? "",
-                      effectiveFrom: toDateInput(detail.effectiveFrom),
-                      effectiveTo: toDateInput(detail.effectiveTo),
                       termsJson: detail.terms
                         ? JSON.stringify(detail.terms, null, 2)
                         : "",
@@ -162,8 +156,6 @@ export default function RateCardsPage() {
       monthlyRate: emptyToNull(form.monthlyRate),
       securityDeposit: emptyToNull(form.securityDeposit),
       vehicleCategory: emptyToNull(form.vehicleCategory),
-      effectiveFrom: form.effectiveFrom,
-      effectiveTo: emptyToDate(form.effectiveTo),
       terms,
       ...(editing
         ? {}
@@ -331,30 +323,7 @@ export default function RateCardsPage() {
             </div>
           </FormSection>
 
-          <FormSection title="Validity & terms">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Effective from *">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={form.effectiveFrom}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, effectiveFrom: e.target.value }))
-                  }
-                  required
-                />
-              </Field>
-              <Field label="Effective to">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={form.effectiveTo}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, effectiveTo: e.target.value }))
-                  }
-                />
-              </Field>
-            </div>
+          <FormSection title="Terms">
             <Field label="Terms (JSON)">
               <textarea
                 className={textareaClass}
