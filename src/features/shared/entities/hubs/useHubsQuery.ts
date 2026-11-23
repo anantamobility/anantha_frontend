@@ -11,7 +11,7 @@ export function useHubsQuery(search?: string) {
   const { accessToken } = useAuth();
   return useQuery({
     queryKey: hubEntityKeys.list(search),
-    queryFn: () => fetchHubs({ page: 1, limit: 100, search: search || undefined }),
+    queryFn: () => fetchHubs({ page: 1, limit: 200, search: search || undefined }),
     enabled: !!accessToken,
     staleTime: 60_000,
   });

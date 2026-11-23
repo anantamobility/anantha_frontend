@@ -26,7 +26,15 @@ export const APP_NAV: NavEntry[] = [
       { label: "Staff", path: "/staff", resource: "staff" },
     ],
   },
-  // Operations (Rentals / Collections / Ledger) hidden from sidebar for now.
+  {
+    type: "group",
+    label: "Operations",
+    children: [
+      { label: "Rentals", path: "/rentals", resource: "rental" },
+      { label: "Collections", path: "/collections", resource: "collection" },
+      { label: "Ledger", path: "/ledger", resource: "ledgerEntry" },
+    ],
+  },
   {
     type: "link",
     label: "Roles and permissions",

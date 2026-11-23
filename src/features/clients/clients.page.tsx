@@ -34,7 +34,7 @@ const EMPTY = {
 };
 
 export default function ClientsPage() {
-  const { canManageMasterData } = useRbac();
+  const { canWrite } = useRbac();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -83,7 +83,7 @@ export default function ClientsPage() {
         id: "actions",
         header: "",
         cell: (row) =>
-          canManageMasterData ? (
+          canWrite ? (
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -139,7 +139,7 @@ export default function ClientsPage() {
           ) : null,
       },
     ],
-    [canManageMasterData, generateDuesMutation, statusMutation],
+    [canWrite, generateDuesMutation, statusMutation],
   );
 
   const submit = async () => {
@@ -175,7 +175,7 @@ export default function ClientsPage() {
         title="Clients"
         description="B2B clients for riders, rentals, and dues."
         actions={
-          canManageMasterData ? (
+          canWrite ? (
             <button
               type="button"
               className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
@@ -304,6 +304,21 @@ export default function ClientsPage() {
                 />
               </Field>
             </div>
+            {!editing ? (
+              <label className="mt-3 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      isActive: e.target.checked,
+                    }))
+                  }
+                />
+                Active
+              </label>
+            ) : null}
           </FormSection>
           <div className="flex justify-end gap-2 pt-2">
             <FormActions

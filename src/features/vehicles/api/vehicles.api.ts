@@ -1,11 +1,33 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
 import type { Vehicle, VehicleTyre } from "@/features/shared/entities";
+import { sanitizeImportRows } from "@/features/shared/utils/importRows";
 import type {
   VehicleImportCommitResponse,
   VehicleImportRow,
   VehicleImportValidateResponse,
 } from "./vehicleImport.types";
+
+const VEHICLE_IMPORT_DATE_FIELDS = [
+  "acquiredAt",
+  "dateOfPurchase",
+  "dateOfDelivery",
+  "dateOfRegistration",
+  "dateOfOperation",
+  "warrantyStartDate",
+  "warrantyEndDate",
+  "telematicsExpiryDate",
+  "emiDueDate",
+  "insuranceValidFrom",
+  "insuranceValidTo",
+];
+
+function prepareVehicleImportRows(rows: VehicleImportRow[]) {
+  return sanitizeImportRows(
+    rows as Record<string, unknown>[],
+    VEHICLE_IMPORT_DATE_FIELDS,
+  );
+}
 
 export type VehiclePayload = {
   registrationNumber: string;
@@ -94,11 +116,15 @@ export async function deleteVehicle(id: string) {
 }
 
 export async function validateVehicleImport(rows: VehicleImportRow[]) {
-  const response = await apiClient.post("/vehicles/import/validate", { rows });
+  const response = await apiClient.post("/vehicles/import/validate", {
+    rows: prepareVehicleImportRows(rows),
+  });
   return unwrapData<VehicleImportValidateResponse>(response.data);
 }
 
 export async function importVehicles(rows: VehicleImportRow[]) {
-  const response = await apiClient.post("/vehicles/import", { rows });
+  const response = await apiClient.post("/vehicles/import", {
+    rows: prepareVehicleImportRows(rows),
+  });
   return unwrapData<VehicleImportCommitResponse>(response.data);
 }

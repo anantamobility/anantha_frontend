@@ -1,5 +1,27 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
+import { sanitizeImportRows } from "@/features/shared/utils/importRows";
+import type {
+  StaffImportCommitResponse,
+  StaffImportRow,
+  StaffImportValidateResponse,
+} from "./staffImport.types";
+
+const STAFF_IMPORT_DATE_FIELDS = [
+  "dateOfBirth",
+  "anniversary",
+  "dateOfJoining",
+  "probationEndDate",
+  "dateOfLastWorkingDay",
+  "dateOfRelieving",
+];
+
+function prepareStaffImportRows(rows: StaffImportRow[]) {
+  return sanitizeImportRows(
+    rows as Record<string, unknown>[],
+    STAFF_IMPORT_DATE_FIELDS,
+  );
+}
 
 export type StaffAddress = {
   line1?: string;
@@ -118,4 +140,18 @@ export async function updateStaff(id: string, payload: Partial<StaffUpdatePayloa
 
 export async function deleteStaff(id: string) {
   await apiClient.delete(`/staff/${id}`);
+}
+
+export async function validateStaffImport(rows: StaffImportRow[]) {
+  const response = await apiClient.post("/staff/import/validate", {
+    rows: prepareStaffImportRows(rows),
+  });
+  return unwrapData<StaffImportValidateResponse>(response.data);
+}
+
+export async function importStaff(rows: StaffImportRow[]) {
+  const response = await apiClient.post("/staff/import", {
+    rows: prepareStaffImportRows(rows),
+  });
+  return unwrapData<StaffImportCommitResponse>(response.data);
 }

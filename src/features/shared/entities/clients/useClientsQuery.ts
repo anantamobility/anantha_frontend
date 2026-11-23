@@ -13,7 +13,7 @@ export function useClientsQuery(search?: string, enabled = true) {
   return useQuery({
     queryKey: clientEntityKeys.list(search),
     queryFn: () =>
-      fetchClients({ page: 1, limit: 100, search: search || undefined }),
+      fetchClients({ page: 1, limit: 200, search: search || undefined }),
     enabled: !!accessToken && enabled,
     staleTime: 60_000,
   });

@@ -21,6 +21,7 @@ const ROLE_MODULE_ACCESS: Record<string, string[]> = {
     "auditLog",
   ],
   SUPERVISOR: [
+    "client",
     "ratecard",
     "rental",
     "collection",

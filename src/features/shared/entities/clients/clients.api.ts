@@ -4,7 +4,7 @@ import type { Client } from "../types";
 
 export async function fetchClients(params: PaginatedListParams = {}) {
   const response = await apiClient.get("/clients", {
-    params: { limit: 100, ...params },
+    params: { limit: 200, ...params },
   });
   return unwrapData<{ clients: Client[]; pagination: PaginationMeta }>(
     response.data,

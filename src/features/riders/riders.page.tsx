@@ -420,6 +420,9 @@ export default function RidersPage() {
                     required
                     minLength={8}
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    At least 8 characters, including a letter and a number.
+                  </p>
                 </Field>
               </>
             ) : (

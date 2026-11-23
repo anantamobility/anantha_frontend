@@ -29,6 +29,7 @@ import {
   type AddressForm,
 } from "@/features/shared/utils/formValues";
 import { getStaff, type StaffMember } from "./api/staff.api";
+import { StaffImportDialog } from "./components/StaffImportDialog";
 import { useStaffListQuery } from "./hooks/useStaffQuery";
 import { useStaffMutations } from "./hooks/useStaffMutations";
 
@@ -78,6 +79,7 @@ export default function StaffPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -253,17 +255,26 @@ export default function StaffPage() {
         description="Operator accounts and HR profile — full staff record."
         actions={
           canManageMasterData ? (
-            <button
-              type="button"
-              className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
-              onClick={() => {
-                setEditing(null);
-                setForm(EMPTY);
-                setFormOpen(true);
-              }}
-            >
-              Add staff
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border px-3 py-2 text-sm"
+                onClick={() => setImportOpen(true)}
+              >
+                Import
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                onClick={() => {
+                  setEditing(null);
+                  setForm(EMPTY);
+                  setFormOpen(true);
+                }}
+              >
+                Add staff
+              </button>
+            </div>
           ) : null
         }
       />
@@ -385,6 +396,9 @@ export default function StaffPage() {
                     required
                     minLength={8}
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    At least 8 characters, including a letter and a number.
+                  </p>
                 </Field>
                 <Field label="Role *">
                   <select
@@ -737,6 +751,11 @@ export default function StaffPage() {
           await deleteMutation.mutateAsync(deleteId);
           setDeleteId(null);
         }}
+      />
+
+      <StaffImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
     </div>
   );
