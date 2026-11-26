@@ -17,6 +17,8 @@ import {
   type DataTableColumn,
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
+import { useRolesQuery } from "@/features/pbac/hooks/useRolesQuery";
+import { AccountAdminSection } from "@/features/shared/users/AccountAdminSection";
 import { getErrorMessage } from "@/features/shared/api/client";
 import { notifyError } from "@/features/shared/utils/notify";
 import {
@@ -117,6 +119,7 @@ export default function RidersPage() {
   const listQuery = useRidersListQuery(page, 20, search);
   const hubsQuery = useHubsQuery();
   const clientsQuery = useClientsQuery(undefined, form.rentalType === "B2B");
+  const rolesQuery = useRolesQuery(canManageMasterData);
   const {
     createMutation,
     updateMutation,
@@ -127,6 +130,7 @@ export default function RidersPage() {
   } = useRiderMutations();
   const riders = listQuery.data?.riders ?? [];
   const pagination = listQuery.data?.pagination;
+  const roles = rolesQuery.data?.roles ?? [];
 
   const setAddress = (patch: Partial<AddressForm>) =>
     setForm((prev) => ({ ...prev, address: { ...prev.address, ...patch } }));
@@ -425,11 +429,7 @@ export default function RidersPage() {
                   </p>
                 </Field>
               </>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Phone/email are managed on the linked user account.
-              </p>
-            )}
+            ) : null}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date of birth">
                 <input
@@ -742,11 +742,40 @@ export default function RidersPage() {
             />
           </div>
         </form>
+
+        {editing?.user ? (
+          <div className="mt-4">
+            <AccountAdminSection
+              user={editing.user}
+              roles={roles}
+              onUserUpdated={(next) =>
+                setEditing((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        user: {
+                          id: next.id,
+                          email: next.email,
+                          phoneNumber: next.phoneNumber,
+                          status: next.status,
+                          role: next.role,
+                        },
+                      }
+                    : prev,
+                )
+              }
+            />
+          </div>
+        ) : null}
       </EntityFormDialog>
 
       <EntityFormDialog
         open={!!statusTarget}
-        title={statusTarget ? `Status — ${statusTarget.fullName}` : "Status"}
+        title={
+          statusTarget
+            ? `Rider status — ${statusTarget.fullName}`
+            : "Rider status"
+        }
         onClose={() => setStatusTarget(null)}
       >
         <form
@@ -764,7 +793,7 @@ export default function RidersPage() {
             setStatusTarget(null);
           }}
         >
-          <Field label="Status">
+          <Field label="Ops status">
             <select
               className={inputClass}
               value={statusForm.status}
@@ -782,6 +811,10 @@ export default function RidersPage() {
               ))}
             </select>
           </Field>
+          <p className="text-xs text-muted-foreground">
+            Rider employment/ops status. Login account status is under Edit →
+            Account.
+          </p>
           <Field label="Reason">
             <input
               className={inputClass}

@@ -62,10 +62,13 @@ export type StaffMember = {
   bankAccountNumber?: string | null;
   bankIfsc?: string | null;
   bankHolderName?: string | null;
+  userId?: string;
   user?: {
     id: string;
     email?: string | null;
     phoneNumber: string;
+    status?: "ONBOARDING" | "ACTIVE" | "SUSPENDED" | string;
+    role?: { id: string; name: string } | null;
   } | null;
 };
 

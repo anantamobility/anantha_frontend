@@ -72,6 +72,8 @@ export type RiderUser = {
   id: string;
   email?: string | null;
   phoneNumber: string;
+  status?: "ONBOARDING" | "ACTIVE" | "SUSPENDED" | string;
+  role?: { id: string; name: string } | null;
 };
 
 export type Rider = {
@@ -121,6 +123,31 @@ export type RateCard = {
   isActive: boolean;
 };
 
+export type ClientContract = {
+  id: string;
+  contractNumber: string;
+  clientId: string;
+  hubId?: string | null;
+  riderManagement: "CLIENT_MANAGED" | "AML_MANAGED" | string;
+  startDate: string;
+  endDate?: string | null;
+  vehicleCount: number;
+  vehicleModels: string[];
+  dailyRate: string | number;
+  securityDeposit?: string | number | null;
+  billingFrequency: "WEEKLY" | "FORTNIGHTLY" | "MONTHLY" | string;
+  minBillingDays?: number | null;
+  graceDays?: number | null;
+  paymentTermsDays?: number | null;
+  replacementRules?: string | null;
+  downtimeRules?: string | null;
+  damageRecoveryRules?: string | null;
+  taxDetails?: unknown;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Client = {
   id: string;
   clientCode?: string | null;
@@ -130,6 +157,7 @@ export type Client = {
   email?: string | null;
   phoneNumber?: string | null;
   isActive: boolean;
+  contracts?: ClientContract[];
   createdAt?: string;
   updatedAt?: string;
 };

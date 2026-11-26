@@ -17,6 +17,7 @@ import {
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import { useRolesQuery } from "@/features/pbac/hooks/useRolesQuery";
+import { AccountAdminSection } from "@/features/shared/users/AccountAdminSection";
 import { getErrorMessage } from "@/features/shared/api/client";
 import { notifyError } from "@/features/shared/utils/notify";
 import {
@@ -140,7 +141,7 @@ export default function StaffPage() {
                       phoneNumber: detail.user?.phoneNumber ?? "",
                       email: detail.user?.email ?? "",
                       password: "",
-                      roleId: "",
+                      roleId: detail.user?.role?.id ?? "",
                       hubId: detail.hubId ?? "",
                       department: detail.department ?? "",
                       employeeCode: detail.employeeCode ?? "",
@@ -416,12 +417,7 @@ export default function StaffPage() {
                   </select>
                 </Field>
               </>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Phone/email/password/role are on the linked user account (not edited
-                here).
-              </p>
-            )}
+            ) : null}
           </FormSection>
 
           <FormSection title="Organization">
@@ -440,7 +436,7 @@ export default function StaffPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Status">
+              <Field label="Employment status">
                 <select
                   className={inputClass}
                   value={form.status}
@@ -738,6 +734,31 @@ export default function StaffPage() {
             />
           </div>
         </form>
+
+        {editing?.user ? (
+          <div className="mt-4">
+            <AccountAdminSection
+              user={editing.user}
+              roles={roles}
+              onUserUpdated={(next) =>
+                setEditing((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        user: {
+                          id: next.id,
+                          email: next.email,
+                          phoneNumber: next.phoneNumber,
+                          status: next.status,
+                          role: next.role,
+                        },
+                      }
+                    : prev,
+                )
+              }
+            />
+          </div>
+        ) : null}
       </EntityFormDialog>
 
       <ConfirmDialog

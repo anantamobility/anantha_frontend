@@ -6,6 +6,7 @@ export type {
   RiderUser,
   RateCard,
   Client,
+  ClientContract,
   Rental,
   RentalDue,
   Collection,

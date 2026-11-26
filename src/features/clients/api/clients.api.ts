@@ -1,6 +1,11 @@
 import { apiClient, unwrapData } from "@/features/shared/api/apiClient";
 import type { PaginatedListParams, PaginationMeta } from "@/features/shared/api/types";
-import type { Client, Collection, RentalDue } from "@/features/shared/entities";
+import type {
+  Client,
+  ClientContract,
+  Collection,
+  RentalDue,
+} from "@/features/shared/entities";
 
 export type ClientPayload = {
   clientCode?: string;
@@ -15,6 +20,27 @@ export type ClientPayload = {
 export type ClientStatusPayload = {
   isActive: boolean;
   reason?: string;
+};
+
+export type ClientContractPayload = {
+  contractNumber: string;
+  hubId?: string | null;
+  riderManagement: "CLIENT_MANAGED" | "AML_MANAGED";
+  startDate: string;
+  endDate?: string | null;
+  vehicleCount: number;
+  vehicleModels: string[];
+  dailyRate: string;
+  securityDeposit?: string | null;
+  billingFrequency: "WEEKLY" | "FORTNIGHTLY" | "MONTHLY";
+  minBillingDays?: number | null;
+  graceDays?: number | null;
+  paymentTermsDays?: number | null;
+  replacementRules?: string | null;
+  downtimeRules?: string | null;
+  damageRecoveryRules?: string | null;
+  taxDetails?: unknown;
+  notes?: string | null;
 };
 
 export async function listClients(params: PaginatedListParams) {
@@ -48,6 +74,26 @@ export async function deleteClient(id: string) {
   await apiClient.delete(`/clients/${id}`);
 }
 
+export async function createClientContract(
+  clientId: string,
+  payload: ClientContractPayload,
+) {
+  const response = await apiClient.post(`/clients/${clientId}/contract`, payload);
+  return unwrapData<{ contract: ClientContract }>(response.data).contract;
+}
+
+export async function updateClientContract(
+  clientId: string,
+  contractId: string,
+  payload: Partial<Omit<ClientContractPayload, "contractNumber">>,
+) {
+  const response = await apiClient.patch(
+    `/clients/${clientId}/contracts/${contractId}`,
+    payload,
+  );
+  return unwrapData<{ contract: ClientContract }>(response.data).contract;
+}
+
 export async function listClientDues(id: string, params: PaginatedListParams = {}) {
   const response = await apiClient.get(`/clients/${id}/dues`, { params });
   return unwrapData<{ dues: RentalDue[]; pagination: PaginationMeta }>(
@@ -63,12 +109,4 @@ export async function listClientCollections(
   return unwrapData<{ collections: Collection[]; pagination: PaginationMeta }>(
     response.data,
   );
-}
-
-export async function generateClientDues(
-  id: string,
-  payload: { throughDate?: string } = {},
-) {
-  const response = await apiClient.post(`/clients/${id}/dues/generate`, payload);
-  return unwrapData<{ created?: number; dues?: RentalDue[] }>(response.data);
 }

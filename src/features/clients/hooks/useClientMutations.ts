@@ -4,10 +4,12 @@ import { clientEntityKeys } from "@/features/shared/entities";
 import { notifyError, notifySuccess } from "@/features/shared/utils/notify";
 import {
   createClient,
+  createClientContract,
   deleteClient,
-  generateClientDues,
   updateClient,
+  updateClientContract,
   updateClientStatus,
+  type ClientContractPayload,
   type ClientPayload,
   type ClientStatusPayload,
 } from "../api/clients.api";
@@ -72,20 +74,37 @@ export function useClientMutations() {
       onError: (error) =>
         notifyError(getErrorMessage(error, "Failed to delete client")),
     }),
-    generateDuesMutation: useMutation({
+    createContractMutation: useMutation({
       mutationFn: ({
-        id,
-        throughDate,
+        clientId,
+        payload,
       }: {
-        id: string;
-        throughDate?: string;
-      }) => generateClientDues(id, throughDate ? { throughDate } : {}),
+        clientId: string;
+        payload: ClientContractPayload;
+      }) => createClientContract(clientId, payload),
       onSuccess: async () => {
         await invalidate(queryClient);
-        notifySuccess("Client dues generated");
+        notifySuccess("Contract created");
       },
       onError: (error) =>
-        notifyError(getErrorMessage(error, "Failed to generate client dues")),
+        notifyError(getErrorMessage(error, "Failed to create contract")),
+    }),
+    updateContractMutation: useMutation({
+      mutationFn: ({
+        clientId,
+        contractId,
+        payload,
+      }: {
+        clientId: string;
+        contractId: string;
+        payload: Partial<Omit<ClientContractPayload, "contractNumber">>;
+      }) => updateClientContract(clientId, contractId, payload),
+      onSuccess: async () => {
+        await invalidate(queryClient);
+        notifySuccess("Contract updated");
+      },
+      onError: (error) =>
+        notifyError(getErrorMessage(error, "Failed to update contract")),
     }),
   };
 }
