@@ -377,6 +377,31 @@ export default function RidersPage() {
         title={editing ? "Edit rider" : "Create rider"}
         onClose={() => setFormOpen(false)}
       >
+        {editing?.user ? (
+          <div className="mb-4">
+            <AccountAdminSection
+              user={editing.user}
+              roles={roles}
+              onUserUpdated={(next) =>
+                setEditing((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        user: {
+                          id: next.id,
+                          email: next.email,
+                          phoneNumber: next.phoneNumber,
+                          status: next.status,
+                          role: next.role,
+                        },
+                      }
+                    : prev,
+                )
+              }
+            />
+          </div>
+        ) : null}
+
         <form className="space-y-4" onSubmit={onSubmit}>
           <FormSection title="Identity">
             <Field label="Full name *">
@@ -742,31 +767,6 @@ export default function RidersPage() {
             />
           </div>
         </form>
-
-        {editing?.user ? (
-          <div className="mt-4">
-            <AccountAdminSection
-              user={editing.user}
-              roles={roles}
-              onUserUpdated={(next) =>
-                setEditing((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        user: {
-                          id: next.id,
-                          email: next.email,
-                          phoneNumber: next.phoneNumber,
-                          status: next.status,
-                          role: next.role,
-                        },
-                      }
-                    : prev,
-                )
-              }
-            />
-          </div>
-        ) : null}
       </EntityFormDialog>
 
       <EntityFormDialog
