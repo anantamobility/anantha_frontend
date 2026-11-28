@@ -23,7 +23,10 @@ import {
 } from "@/features/shared/components/common";
 import { useRbac } from "@/features/shared/hooks/useRbac";
 import { emptyToNull } from "@/features/shared/utils/formValues";
+import { useRentalDeploymentsQuery } from "@/features/deployments/hooks/useDeploymentsQuery";
+import { useDeploymentMutations } from "@/features/deployments/hooks/useDeploymentMutations";
 import {
+  useDepositLedgerQuery,
   useRentalCollectionsQuery,
   useRentalDepositQuery,
   useRentalDetailQuery,
@@ -82,12 +85,31 @@ export default function RentalsPage() {
     reference: "",
     reason: "",
   });
+  const [deployOutOpen, setDeployOutOpen] = useState(false);
+  const [deployOutForm, setDeployOutForm] = useState({
+    vehicleId: "",
+    outHubId: "",
+    reason: "",
+  });
+  const [deployInOpen, setDeployInOpen] = useState(false);
+  const [deployInForm, setDeployInForm] = useState({
+    inHubId: "",
+    endOdometer: "",
+    vehicleReturnStatus: "IDLE" as
+      | "IDLE"
+      | "IN_SERVICE"
+      | "UNDER_REPAIR"
+      | "OUT_OF_SERVICE",
+  });
 
   const listQuery = useRentalsListQuery(page, 20, search);
   const detailQuery = useRentalDetailQuery(detailId);
   const duesQuery = useRentalDuesQuery(detailId);
   const collectionsQuery = useRentalCollectionsQuery(detailId);
   const depositQuery = useRentalDepositQuery(detailId);
+  const depositId = depositQuery.data?.deposit?.id ?? null;
+  const depositLedgerQuery = useDepositLedgerQuery(depositId);
+  const deploymentsQuery = useRentalDeploymentsQuery(detailId);
   const clientsQuery = useClientsQuery();
   const hubsQuery = useHubsQuery();
   const ridersQuery = useRidersQuery();
@@ -99,10 +121,17 @@ export default function RentalsPage() {
     receiveDepositMutation,
     refundDepositMutation,
   } = useRentalMutations();
+  const { deployOutMutation, deployInMutation } = useDeploymentMutations();
 
   const rentals = listQuery.data?.rentals ?? [];
   const pagination = listQuery.data?.pagination;
   const detail = detailQuery.data;
+  const activeAssignment = detail?.assignments?.find(
+    (row) => row.status === "ACTIVE",
+  );
+  const idleVehicles = (vehiclesQuery.data?.vehicles ?? []).filter(
+    (vehicle) => vehicle.status === "IDLE" || !vehicle.status,
+  );
 
   const columns = useMemo<DataTableColumn<Rental>[]>(
     () => [
@@ -573,6 +602,96 @@ export default function RentalsPage() {
               </p>
             </div>
 
+            <FormSection title="Deployments">
+              <div className="mb-3 flex flex-wrap justify-end gap-2">
+                {canWrite && !activeAssignment ? (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border px-3 py-1.5 text-sm"
+                    onClick={() => {
+                      setDeployOutForm({
+                        vehicleId: "",
+                        outHubId: detail.hubId || "",
+                        reason: "",
+                      });
+                      setDeployOutOpen(true);
+                    }}
+                  >
+                    Deploy out
+                  </button>
+                ) : null}
+                {canWrite && activeAssignment ? (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border px-3 py-1.5 text-sm"
+                    onClick={() => {
+                      setDeployInForm({
+                        inHubId: detail.hubId || "",
+                        endOdometer: "",
+                        vehicleReturnStatus: "IDLE",
+                      });
+                      setDeployInOpen(true);
+                    }}
+                  >
+                    Deploy in
+                  </button>
+                ) : null}
+              </div>
+              {activeAssignment ? (
+                <p className="mb-2 text-sm">
+                  Active:{" "}
+                  {activeAssignment.vehicle?.registrationNumber ||
+                    activeAssignment.vehicleId}
+                </p>
+              ) : (
+                <p className="mb-2 text-sm text-muted-foreground">
+                  No active vehicle assignment.
+                </p>
+              )}
+              {deploymentsQuery.isLoading ? (
+                <LoadingSkeleton />
+              ) : (deploymentsQuery.data?.deployments ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No deployment history.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="py-2 pr-2">Vehicle</th>
+                        <th className="py-2 pr-2">Start</th>
+                        <th className="py-2 pr-2">End</th>
+                        <th className="py-2 pr-2">Out hub</th>
+                        <th className="py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(deploymentsQuery.data?.deployments ?? []).map((row) => (
+                        <tr key={row.id} className="border-b border-border/60">
+                          <td className="py-2 pr-2">
+                            {row.vehicle?.registrationNumber || row.vehicleId}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {row.startDate?.slice(0, 10) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {row.endDate?.slice(0, 10) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {row.outHub?.name || "—"}
+                          </td>
+                          <td className="py-2">
+                            <StatusBadge status={row.status} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </FormSection>
+
             <FormSection title="Dues">
               <div className="mb-3 flex justify-end">
                 {canWrite ? (
@@ -779,11 +898,217 @@ export default function RentalsPage() {
                       </div>
                     </form>
                   ) : null}
+
+                  <div className="pt-2">
+                    <p className="mb-2 text-sm font-medium">Deposit ledger</p>
+                    {depositLedgerQuery.isLoading ? (
+                      <LoadingSkeleton />
+                    ) : (depositLedgerQuery.data?.transactions ?? []).length ===
+                      0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No deposit movements yet.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {(depositLedgerQuery.data?.transactions ?? []).map(
+                          (tx) => (
+                            <li
+                              key={tx.id}
+                              className="flex justify-between gap-3 border-b border-border/50 pb-2"
+                            >
+                              <span>
+                                {tx.type} · {tx.direction} · {money(tx.amount)}
+                                {tx.reference ? ` · ${tx.reference}` : ""}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {tx.createdAt?.slice(0, 10) || "—"}
+                              </span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </FormSection>
           </div>
         )}
+      </EntityFormDialog>
+
+      <EntityFormDialog
+        open={deployOutOpen}
+        title="Deploy vehicle out"
+        onClose={() => setDeployOutOpen(false)}
+      >
+        <form
+          className="space-y-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!detail) return;
+            try {
+              await deployOutMutation.mutateAsync({
+                rentalId: detail.id,
+                vehicleId: deployOutForm.vehicleId,
+                outHubId: deployOutForm.outHubId,
+                reason: deployOutForm.reason.trim() || undefined,
+              });
+              setDeployOutOpen(false);
+            } catch {
+              // mutation notifies
+            }
+          }}
+        >
+          <Field label="Vehicle">
+            <select
+              className={inputClass}
+              value={deployOutForm.vehicleId}
+              onChange={(e) =>
+                setDeployOutForm((prev) => ({
+                  ...prev,
+                  vehicleId: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="">Select vehicle</option>
+              {idleVehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.registrationNumber}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Out hub">
+            <select
+              className={inputClass}
+              value={deployOutForm.outHubId}
+              onChange={(e) =>
+                setDeployOutForm((prev) => ({
+                  ...prev,
+                  outHubId: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="">Select hub</option>
+              {(hubsQuery.data?.hubs ?? []).map((hub) => (
+                <option key={hub.id} value={hub.id}>
+                  {hub.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Reason">
+            <input
+              className={inputClass}
+              value={deployOutForm.reason}
+              onChange={(e) =>
+                setDeployOutForm((prev) => ({
+                  ...prev,
+                  reason: e.target.value,
+                }))
+              }
+            />
+          </Field>
+          <div className="flex justify-end">
+            <FormActions
+              onCancel={() => setDeployOutOpen(false)}
+              loading={deployOutMutation.isPending}
+              submitLabel="Deploy out"
+            />
+          </div>
+        </form>
+      </EntityFormDialog>
+
+      <EntityFormDialog
+        open={deployInOpen}
+        title="Deploy vehicle in"
+        onClose={() => setDeployInOpen(false)}
+      >
+        <form
+          className="space-y-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!detail || !activeAssignment) return;
+            try {
+              await deployInMutation.mutateAsync({
+                id: activeAssignment.id,
+                rentalId: detail.id,
+                payload: {
+                  inHubId: deployInForm.inHubId,
+                  endOdometer: deployInForm.endOdometer.trim()
+                    ? Number.parseInt(deployInForm.endOdometer, 10)
+                    : undefined,
+                  vehicleReturnStatus: deployInForm.vehicleReturnStatus,
+                },
+              });
+              setDeployInOpen(false);
+            } catch {
+              // mutation notifies
+            }
+          }}
+        >
+          <Field label="In hub">
+            <select
+              className={inputClass}
+              value={deployInForm.inHubId}
+              onChange={(e) =>
+                setDeployInForm((prev) => ({
+                  ...prev,
+                  inHubId: e.target.value,
+                }))
+              }
+              required
+            >
+              <option value="">Select hub</option>
+              {(hubsQuery.data?.hubs ?? []).map((hub) => (
+                <option key={hub.id} value={hub.id}>
+                  {hub.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="End odometer">
+            <input
+              type="number"
+              min={0}
+              className={inputClass}
+              value={deployInForm.endOdometer}
+              onChange={(e) =>
+                setDeployInForm((prev) => ({
+                  ...prev,
+                  endOdometer: e.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Vehicle return status">
+            <select
+              className={inputClass}
+              value={deployInForm.vehicleReturnStatus}
+              onChange={(e) =>
+                setDeployInForm((prev) => ({
+                  ...prev,
+                  vehicleReturnStatus: e.target
+                    .value as typeof prev.vehicleReturnStatus,
+                }))
+              }
+            >
+              <option value="IDLE">IDLE</option>
+              <option value="IN_SERVICE">IN_SERVICE</option>
+              <option value="UNDER_REPAIR">UNDER_REPAIR</option>
+              <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
+            </select>
+          </Field>
+          <div className="flex justify-end">
+            <FormActions
+              onCancel={() => setDeployInOpen(false)}
+              loading={deployInMutation.isPending}
+              submitLabel="Deploy in"
+            />
+          </div>
+        </form>
       </EntityFormDialog>
 
       <ConfirmDialog

@@ -9,6 +9,7 @@ import { StaffPage } from "@/features/staff";
 import { RentalsPage } from "@/features/rentals";
 import { CollectionsPage } from "@/features/collections";
 import { LedgerPage } from "@/features/ledger";
+import { PayStatementsPage } from "@/features/pay-statements";
 import { RolesPage } from "@/features/pbac";
 import { AuditLogsPage } from "@/features/audit-logs";
 import AppLayout from "@/features/shared/layouts/appLayout";
@@ -37,6 +38,7 @@ export default function AppRoutes() {
           <Route path="/rentals" element={<RentalsPage />} />
           <Route path="/collections" element={<CollectionsPage />} />
           <Route path="/ledger" element={<LedgerPage />} />
+          <Route path="/pay-statements" element={<PayStatementsPage />} />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
         </Route>

@@ -33,6 +33,11 @@ export const APP_NAV: NavEntry[] = [
       { label: "Rentals", path: "/rentals", resource: "rental" },
       { label: "Collections", path: "/collections", resource: "collection" },
       { label: "Ledger", path: "/ledger", resource: "ledgerEntry" },
+      {
+        label: "Pay statements",
+        path: "/pay-statements",
+        resource: "riderPayStatement",
+      },
     ],
   },
   {

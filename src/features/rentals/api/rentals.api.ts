@@ -115,7 +115,9 @@ export async function listRentalCollections(
   id: string,
   params: PaginatedListParams = {},
 ) {
-  const response = await apiClient.get(`/rentals/${id}/collections`, { params });
+  const response = await apiClient.get("/collections", {
+    params: { ...params, rentalId: id },
+  });
   return unwrapData<{ collections: Collection[]; pagination: PaginationMeta }>(
     response.data,
   );
@@ -144,4 +146,31 @@ export async function refundRentalDeposit(
     headers: idempotencyHeaders(),
   });
   return unwrapData<unknown>(response.data);
+}
+
+export type DepositLedgerTransaction = {
+  id: string;
+  type: string;
+  direction: string;
+  amount: string | number;
+  reference?: string | null;
+  reason?: string | null;
+  createdAt?: string;
+};
+
+export async function getDepositLedger(
+  depositId: string,
+  params: PaginatedListParams = {},
+) {
+  const response = await apiClient.get(`/deposits/${depositId}/ledger`, {
+    params,
+  });
+  return unwrapData<{
+    depositId: string;
+    balance: string | number;
+    totalCredits: string | number;
+    totalDebits: string | number;
+    transactions: DepositLedgerTransaction[];
+    pagination: PaginationMeta;
+  }>(response.data);
 }

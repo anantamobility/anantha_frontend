@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/shared/context/authContext";
 import {
+  getDepositLedger,
   getRental,
   getRentalDeposit,
   listRentalCollections,
@@ -16,6 +17,8 @@ export const rentalKeys = {
   dues: (id: string) => [...rentalKeys.all, "dues", id] as const,
   collections: (id: string) => [...rentalKeys.all, "collections", id] as const,
   deposit: (id: string) => [...rentalKeys.all, "deposit", id] as const,
+  depositLedger: (depositId: string) =>
+    [...rentalKeys.all, "deposit-ledger", depositId] as const,
 };
 
 export function useRentalsListQuery(page: number, limit: number, search: string) {
@@ -62,5 +65,14 @@ export function useRentalDepositQuery(id: string | null) {
     queryFn: () => getRentalDeposit(id!),
     enabled: !!accessToken && !!id,
     retry: false,
+  });
+}
+
+export function useDepositLedgerQuery(depositId: string | null) {
+  const { accessToken } = useAuth();
+  return useQuery({
+    queryKey: rentalKeys.depositLedger(depositId ?? ""),
+    queryFn: () => getDepositLedger(depositId!, { page: 1, limit: 50 }),
+    enabled: !!accessToken && !!depositId,
   });
 }

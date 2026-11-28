@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import type { Client, ClientContract } from "@/features/shared/entities";
+import type {
+  Client,
+  ClientContract,
+  Collection,
+  RentalDue,
+} from "@/features/shared/entities";
 import { useHubsQuery } from "@/features/shared/entities";
 import {
   ConfirmDialog,
@@ -22,6 +27,8 @@ import { notifyError } from "@/features/shared/utils/notify";
 import { emptyToNull, toDateInput } from "@/features/shared/utils/formValues";
 import {
   getClient,
+  listClientCollections,
+  listClientDues,
   type ClientContractPayload,
 } from "./api/clients.api";
 import { useClientsListQuery } from "./hooks/useClientsQuery";
@@ -146,6 +153,11 @@ export default function ClientsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<Client | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailDues, setDetailDues] = useState<RentalDue[]>([]);
+  const [detailCollections, setDetailCollections] = useState<Collection[]>(
+    [],
+  );
+  const [financeLoading, setFinanceLoading] = useState(false);
 
   const [contractOpen, setContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<ClientContract | null>(
@@ -168,9 +180,28 @@ export default function ClientsPage() {
   const pagination = listQuery.data?.pagination;
   const hubs = hubsQuery.data?.hubs ?? [];
 
+  const loadClientFinance = async (clientId: string) => {
+    setFinanceLoading(true);
+    try {
+      const [duesResult, collectionsResult] = await Promise.all([
+        listClientDues(clientId, { page: 1, limit: 50 }),
+        listClientCollections(clientId, { page: 1, limit: 50 }),
+      ]);
+      setDetailDues(duesResult.dues);
+      setDetailCollections(collectionsResult.collections);
+    } catch (error) {
+      setDetailDues([]);
+      setDetailCollections([]);
+      notifyError(getErrorMessage(error, "Failed to load client finance"));
+    } finally {
+      setFinanceLoading(false);
+    }
+  };
+
   const reloadDetail = async (clientId: string) => {
     const next = await getClient(clientId);
     setDetail(next);
+    await loadClientFinance(clientId);
     return next;
   };
 
@@ -178,6 +209,8 @@ export default function ClientsPage() {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetail(null);
+    setDetailDues([]);
+    setDetailCollections([]);
     try {
       await reloadDetail(clientId);
     } catch (error) {
@@ -518,6 +551,8 @@ export default function ClientsPage() {
         onClose={() => {
           setDetailOpen(false);
           setDetail(null);
+          setDetailDues([]);
+          setDetailCollections([]);
         }}
       >
         {detailLoading ? (
@@ -620,6 +655,87 @@ export default function ClientsPage() {
                               </button>
                             ) : null}
                           </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </FormSection>
+
+            <FormSection title="Dues">
+              {financeLoading ? (
+                <LoadingSkeleton />
+              ) : detailDues.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No dues yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="py-2 pr-2 font-medium">Due date</th>
+                        <th className="py-2 pr-2 font-medium">Period</th>
+                        <th className="py-2 pr-2 font-medium">Due</th>
+                        <th className="py-2 pr-2 font-medium">Outstanding</th>
+                        <th className="py-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailDues.map((due) => (
+                        <tr key={due.id} className="border-b border-border/60">
+                          <td className="py-2 pr-2">
+                            {due.dueDate?.slice(0, 10) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {due.periodStart?.slice(0, 10) || "—"} →{" "}
+                            {due.periodEnd?.slice(0, 10) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {moneyToInput(due.amountDue) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {moneyToInput(due.outstandingAmount) || "—"}
+                          </td>
+                          <td className="py-2">
+                            <StatusBadge status={due.status} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </FormSection>
+
+            <FormSection title="Collections">
+              {financeLoading ? (
+                <LoadingSkeleton />
+              ) : detailCollections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No collections yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="py-2 pr-2 font-medium">Received</th>
+                        <th className="py-2 pr-2 font-medium">Amount</th>
+                        <th className="py-2 pr-2 font-medium">Method</th>
+                        <th className="py-2 font-medium">Reference</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailCollections.map((row) => (
+                        <tr key={row.id} className="border-b border-border/60">
+                          <td className="py-2 pr-2">
+                            {row.receivedAt?.slice(0, 10) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {moneyToInput(row.amount) || "—"}
+                          </td>
+                          <td className="py-2 pr-2">{row.paymentMethod}</td>
+                          <td className="py-2">{row.referenceNumber || "—"}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -12,10 +12,7 @@ import {
   inputClass,
   type DataTableColumn,
 } from "@/features/shared/components/common";
-import {
-  useLedgerListQuery,
-  useLedgerSummaryQuery,
-} from "./hooks/useLedgerQuery";
+import { useLedgerListQuery } from "./hooks/useLedgerQuery";
 
 function money(value: string | number | null | undefined) {
   if (value == null || value === "") return "—";
@@ -29,7 +26,6 @@ export default function LedgerPage() {
 
   const ridersQuery = useRidersQuery();
   const listQuery = useLedgerListQuery(page, 20, search, riderId);
-  const summaryQuery = useLedgerSummaryQuery(riderId);
 
   const entries = listQuery.data?.entries ?? [];
   const pagination = listQuery.data?.pagination;
@@ -80,7 +76,7 @@ export default function LedgerPage() {
     <div>
       <PageHeader
         title="Ledger"
-        description="Read-only journal entries and rider balance summary."
+        description="Read-only journal entries. Filter by rider when needed."
       />
 
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_280px]">
@@ -92,7 +88,7 @@ export default function LedgerPage() {
           }}
           placeholder="Search ledger…"
         />
-        <Field label="Rider filter / summary">
+        <Field label="Rider filter">
           <select
             className={inputClass}
             value={riderId}
@@ -111,41 +107,6 @@ export default function LedgerPage() {
           </select>
         </Field>
       </div>
-
-      {riderId ? (
-        <div className="mb-4 rounded-xl border border-border bg-card p-4">
-          {summaryQuery.isLoading ? (
-            <LoadingSkeleton />
-          ) : summaryQuery.isError ? (
-            <p className="text-sm text-muted-foreground">
-              Summary unavailable for this rider (ledger is for B2C AML riders).
-            </p>
-          ) : summaryQuery.data ? (
-            <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
-              <p>
-                <span className="text-muted-foreground">Rider:</span>{" "}
-                {summaryQuery.data.rider.fullName}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Credits:</span>{" "}
-                {money(summaryQuery.data.totalCredits)}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Debits:</span>{" "}
-                {money(summaryQuery.data.totalDebits)}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Available:</span>{" "}
-                {money(summaryQuery.data.availableBalance)}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Unsettled:</span>{" "}
-                {summaryQuery.data.unsettledEntryCount}
-              </p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
 
       {listQuery.isLoading ? (
         <LoadingSkeleton />

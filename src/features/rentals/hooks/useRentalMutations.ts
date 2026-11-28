@@ -27,6 +27,9 @@ async function invalidateAll(
         queryKey: rentalKeys.collections(rentalId),
       }),
       queryClient.invalidateQueries({ queryKey: rentalKeys.deposit(rentalId) }),
+      queryClient.invalidateQueries({
+        queryKey: [...rentalKeys.all, "deposit-ledger"],
+      }),
     ]);
   }
 }
